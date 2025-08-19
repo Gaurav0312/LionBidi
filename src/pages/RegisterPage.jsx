@@ -212,7 +212,9 @@ const RegisterPage = () => {
 
       // Send Email OTP
       const emailOtpResponse = await fetch(
+        
         "https://lion-bidi-backend.onrender.com/api/auth/send-registration-otp",
+                                                                                              
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

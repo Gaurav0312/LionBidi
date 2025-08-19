@@ -18,7 +18,8 @@ import {
   Settings,
   LogOut,
   Star,
-  Zap
+  Zap,
+  Bell
 } from 'lucide-react';
 
 const MobileMenu = ({ 
@@ -89,14 +90,16 @@ const MobileMenu = ({
     onClose();
   }, [handleNavigate, onClose]);
 
-  const handleAuthAction = useCallback((action) => {
-    if (action === 'signin' && openAuthModal) {
-      openAuthModal();
-    } else {
-      handleNavigate(action === 'signin' ? '/login' : '/register');
-    }
+  // Fixed authentication handlers - Direct navigation like desktop
+  const handleSignIn = useCallback(() => {
+    handleNavigate('/login');
     onClose();
-  }, [openAuthModal, handleNavigate, onClose]);
+  }, [handleNavigate, onClose]);
+
+  const handleRegister = useCallback(() => {
+    handleNavigate('/register');
+    onClose();
+  }, [handleNavigate, onClose]);
 
   const handleCartOpen = useCallback(() => {
     setIsCartOpen(true);
@@ -260,56 +263,51 @@ const MobileMenu = ({
                       </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      {userActions.map(({ path, label, icon: Icon }) => (
+                    {/* Quick Actions - Updated to match desktop functionality */}
+                    <div className="space-y-2 mb-4">
+                      {[
+                        { path: "/profile", label: "My Profile", icon: User },
+                        { path: "/orders", label: "Orders", icon: ShoppingCart },
+                        { path: "/wishlist", label: "Wishlist", icon: Heart, badge: wishlist.length },
+                        { path: "/settings", label: "Settings", icon: Settings },
+                      ].map(({ path, label, icon: Icon, badge }) => (
                         <button
                           key={path}
                           onClick={() => handleNavigateAndClose(path)}
-                          className="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors duration-200"
+                          className="w-full flex items-center justify-between p-3 text-left text-gray-700 hover:text-divine-orange hover:bg-orange-50 transition-all duration-200 rounded-lg border border-gray-200 hover:border-orange-200"
                         >
-                          <Icon size={18} className="text-gray-600 mb-1" />
-                          <span className="text-xs font-medium text-gray-700">{label}</span>
+                          <div className="flex items-center space-x-3">
+                            <Icon size={18} />
+                            <span className="font-medium">{label}</span>
+                          </div>
+                          {badge && badge > 0 && (
+                            <span className="bg-divine-orange text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-semibold">
+                              {badge}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
 
-                    {/* Wishlist & Cart */}
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => handleNavigateAndClose("/wishlist")}
-                        className="w-full flex items-center justify-between p-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors duration-200"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <Heart size={18} className="text-red-600" />
-                          <span className="font-medium text-red-700 text-sm">Wishlist</span>
+                    {/* Cart Button */}
+                    <button
+                      onClick={handleCartOpen}
+                      className="w-full flex items-center justify-between p-4 bg-divine-orange hover:bg-divine-orange/90 text-white rounded-xl transition-all duration-200 shadow-lg mb-4"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <ShoppingCart size={18} />
+                        <div className="text-left">
+                          <p className="font-semibold text-sm">Cart</p>
+                          <p className="text-xs opacity-90">{cartCount} items</p>
                         </div>
-                        {wishlist.length > 0 && (
-                          <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                            {wishlist.length > 99 ? '99+' : wishlist.length}
-                          </span>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={handleCartOpen}
-                        className="w-full flex items-center justify-between p-4 bg-divine-orange hover:bg-divine-orange/90 text-white rounded-xl transition-all duration-200 shadow-lg"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <ShoppingCart size={18} />
-                          <div className="text-left">
-                            <p className="font-semibold text-sm">Cart</p>
-                            <p className="text-xs opacity-90">{cartCount} items</p>
-                          </div>
+                      </div>
+                      {cartSavings > 0 && (
+                        <div className="text-right">
+                          <div className="text-xs opacity-80">Saved</div>
+                          <div className="font-bold text-sm">₹{cartSavings.toLocaleString()}</div>
                         </div>
-                        {cartSavings > 0 && (
-                          <div className="text-right">
-                            <div className="text-xs opacity-80">Saved</div>
-                            <div className="font-bold text-sm">₹{cartSavings.toLocaleString()}</div>
-                          </div>
-                        )}
-                      </button>
-                    </div>
+                      )}
+                    </button>
                   </div>
 
                   {/* Logout */}
@@ -333,10 +331,10 @@ const MobileMenu = ({
                       <p className="text-sm text-divine-orange">Experience premium quality!</p>
                     </div>
 
-                    {/* Auth Actions */}
+                    {/* Auth Actions - Direct navigation */}
                     <div className="space-y-3">
                       <button
-                        onClick={() => handleAuthAction('signin')}
+                        onClick={() => handleNavigate("/login")}
                         className="w-full flex items-center justify-center space-x-2 bg-divine-orange hover:bg-divine-orange/90 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
                       >
                         <User size={18} />
@@ -344,7 +342,7 @@ const MobileMenu = ({
                       </button>
 
                       <button
-                        onClick={() => handleAuthAction('register')}
+                        onClick={() => handleNavigate("/register")}
                         className="w-full flex items-center justify-center space-x-2 border-2 border-orange-300 text-divine-orange hover:text-divine-orange hover:bg-orange-50 font-semibold py-3 rounded-xl transition-colors duration-200"
                       >
                         <UserPlus size={18} />
