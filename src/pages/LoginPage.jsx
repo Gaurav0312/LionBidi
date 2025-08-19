@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // ✅ Add this hook
   const { login } = useAppContext();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -74,7 +74,7 @@ const LoginPage = () => {
 
       // Login API call
       const loginResponse = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/auth/login`,
+        "https://lion-bidi-backend.onrender.com/api/auth/login",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -110,7 +110,7 @@ const LoginPage = () => {
         // Update last login on successful login
         if (responseData.user._id) {
           fetch(
-            `${process.env.REACT_APP_API_URL}/api/users/${responseData.user._id}/update-login`,
+            `https://lion-bidi-backend.onrender.com/api/users/${responseData.user._id}/update-login`,
             {
               method: "PATCH",
               headers: {
@@ -142,7 +142,7 @@ const LoginPage = () => {
   const handleSocialLogin = async (provider) => {
     try {
       // This would typically redirect to OAuth provider
-      window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/${provider}`;
+      window.location.href = `https://lion-bidi-backend.onrender.com/api/auth/${provider}`;
     } catch (err) {
       setError(`${provider} login is currently unavailable`);
     }
