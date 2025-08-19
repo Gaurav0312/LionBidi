@@ -312,7 +312,7 @@ const MobileMenu = ({
 
                   {/* Logout */}
                   <button
-                    onClick={handleLogoutAndClose}
+                    onClick={handleLogout}
                     className="w-full flex items-center justify-center space-x-2 p-3 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 hover:border-red-300 rounded-xl transition-colors duration-200"
                   >
                     <LogOut size={16} />
