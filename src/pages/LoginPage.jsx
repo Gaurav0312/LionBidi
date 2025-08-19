@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
-  const navigate = useNavigate(); // ✅ Add this hook
+  const navigate = useNavigate();
   const { login } = useAppContext();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -74,7 +74,7 @@ const LoginPage = () => {
 
       // Login API call
       const loginResponse = await fetch(
-        "http://localhost:5000/api/auth/login",
+        `${process.env.REACT_APP_API_URL}/api/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -110,7 +110,7 @@ const LoginPage = () => {
         // Update last login on successful login
         if (responseData.user._id) {
           fetch(
-            `http://localhost:5000/api/users/${responseData.user._id}/update-login`,
+            `${process.env.REACT_APP_API_URL}/api/users/${responseData.user._id}/update-login`,
             {
               method: "PATCH",
               headers: {
@@ -142,7 +142,7 @@ const LoginPage = () => {
   const handleSocialLogin = async (provider) => {
     try {
       // This would typically redirect to OAuth provider
-      window.location.href = `http://localhost:5000/api/auth/${provider}`;
+      window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/${provider}`;
     } catch (err) {
       setError(`${provider} login is currently unavailable`);
     }

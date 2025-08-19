@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 const RegisterPage = () => {
   const { login, setCurrentPage } = useAppContext();
   const navigate = useNavigate();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -191,7 +192,7 @@ const RegisterPage = () => {
     try {
       // First check if email/phone already exists
       const checkResponse = await fetch(
-        "http://localhost:5000/api/auth/check-availability",
+        `${process.env.REACT_APP_API_URL}/api/auth/check-availability`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -212,7 +213,7 @@ const RegisterPage = () => {
 
       // Send Email OTP
       const emailOtpResponse = await fetch(
-        "http://localhost:5000/api/auth/send-registration-otp",
+        `${API_BASE_URL}/api/auth/send-registration-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -261,7 +262,7 @@ const RegisterPage = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:5000/api/auth/send-email-otp",
+        `${API_BASE_URL}/api/auth/send-email-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -338,7 +339,7 @@ const RegisterPage = () => {
           : null,
       };
 
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),
