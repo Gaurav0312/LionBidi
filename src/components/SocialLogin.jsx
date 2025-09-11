@@ -1,4 +1,4 @@
-// components/SocialLogin.jsx - Cleaned version without unused import
+// components/SocialLogin.jsx
 import React, { useState } from "react";
 
 export default function SocialLogin() {
