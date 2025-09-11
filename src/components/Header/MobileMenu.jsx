@@ -42,28 +42,28 @@ const MobileMenu = ({
 }) => {
   // Get user from context
   const { user: contextUser } = useAppContext();
-  
+
   // Use context user first, fallback to prop
   const user = contextUser || propUser;
-  
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
 
   // Force re-render when user changes
   useEffect(() => {
-    console.log('MobileMenu - user updated:', user);
-    console.log('MobileMenu - user email:', user?.email);
-    console.log('MobileMenu - user name:', user?.name);
-    
+    console.log("MobileMenu - user updated:", user);
+    console.log("MobileMenu - user email:", user?.email);
+    console.log("MobileMenu - user name:", user?.name);
+
     // Force a re-render by updating a state value
-    setForceUpdate(prev => prev + 1);
+    setForceUpdate((prev) => prev + 1);
   }, [user, contextUser, propUser]);
 
   // Also watch for context user specifically
   useEffect(() => {
     if (contextUser) {
-      console.log('MobileMenu - context user updated:', contextUser);
-      setForceUpdate(prev => prev + 1);
+      console.log("MobileMenu - context user updated:", contextUser);
+      setForceUpdate((prev) => prev + 1);
     }
   }, [contextUser]);
 
@@ -154,13 +154,20 @@ const MobileMenu = ({
   }, [isOpen]);
 
   useEffect(() => {
-    console.log('MobileMenu - user prop changed:', user);
-    console.log('MobileMenu - user email:', user?.email);
-    console.log('MobileMenu - user name:', user?.name);
+    console.log("MobileMenu - user prop changed:", user);
+    console.log("MobileMenu - user email:", user?.email);
+    console.log("MobileMenu - user name:", user?.name);
   }, [user]);
 
   // Debug render check
-  console.log('MobileMenu render - user:', user, 'isOpen:', isOpen, 'forceUpdate:', forceUpdate);
+  console.log(
+    "MobileMenu render - user:",
+    user,
+    "isOpen:",
+    isOpen,
+    "forceUpdate:",
+    forceUpdate
+  );
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -288,8 +295,8 @@ const MobileMenu = ({
 
   const UserSection = () => {
     // Debug log in UserSection
-    console.log('UserSection rendering - user:', user);
-    
+    console.log("UserSection rendering - user:", user);
+
     if (!user) return <GuestSection />;
 
     return (
@@ -303,11 +310,13 @@ const MobileMenu = ({
           <div className="bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 border border-orange-200 rounded-xl p-4 mb-4">
             <div className="flex items-center space-x-3 mb-3">
               <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                {user.name?.charAt(0).toUpperCase() || 'U'}
+                {user.name?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className="flex-1">
                 <p className="font-bold text-orange-800">Welcome back!</p>
-                <p className="font-semibold text-gray-800">{user.name || 'User'}</p>
+                <p className="font-semibold text-gray-800">
+                  {user.name || "User"}
+                </p>
                 {user.email && (
                   <p className="text-sm text-orange-600">{user.email}</p>
                 )}
@@ -423,28 +432,24 @@ const MobileMenu = ({
             />
           </div>
           <h3 className="font-bold text-gray-900 mb-1">Join Lion Bidi</h3>
-          <p className="text-sm text-gray-600">Sign in to access your account</p>
+          <p className="text-sm text-gray-600">
+            Sign in to access your account
+          </p>
         </div>
 
         {/* Auth Actions */}
         <div className="space-y-3">
           <button
-            onClick={() => {
-              openAuthModal();
-              onClose();
-            }}
-            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
+            onClick={() => handleNavigateAndClose("/login")}
+            className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] hover:bg-divine-orange/90 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
           >
             <User size={18} />
             <span>Sign In</span>
           </button>
 
           <button
-            onClick={() => {
-              openAuthModal();
-              onClose();
-            }}
-            className="w-full flex items-center justify-center space-x-2 border-2 border-orange-300 text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-semibold py-3 rounded-xl transition-colors duration-200"
+            onClick={() => handleNavigateAndClose("/register")}
+            className="w-full flex items-center justify-center space-x-2 border-2 border-orange-300 text-divine-orange  hover:bg-orange-50 font-semibold py-3 rounded-xl transition-colors duration-200"
           >
             <UserPlus size={18} />
             <span>Create Account</span>
