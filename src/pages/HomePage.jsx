@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, ShoppingCart, Phone, Star, Crown } from "lucide-react";
+import { Truck, ShoppingCart, Phone, Star, Shield } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { sampleProducts } from "../data/sampleProducts";
 import ProductCard from "../components/ProductCard";
@@ -21,8 +21,8 @@ const HomePage = () => {
               <div className="w-full space-y-6 sm:space-y-8 pt-20 sm:pt-16 lg:pt-0">
                 <div className="space-y-4 sm:space-y-6">
                   <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-800">
-                    <span className="text-divine-orange block">
-                      PREMIUM SPECIAL LION BIDI
+                    <span className="text-divine-orange font-extrabold block">
+                      SPECIAL LION BIDI
                     </span>
                     <span className="text-divine-orange">.</span>
                   </h1>
@@ -181,10 +181,10 @@ const HomePage = () => {
               {/* Quick Delivery */}
               <div className="text-center p-6 bg-gray-50 rounded-xl border">
                 <div className="w-16 h-16 bg-divine-orange rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="w-8 h-8 text-white" />
+                  <Truck className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-3">
-                  Quick Delivery
+                  Fast Delivery
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
                   Lightning-fast delivery across all major cities in India with
@@ -209,14 +209,13 @@ const HomePage = () => {
               {/* 24/7 Support */}
               <div className="text-center p-6 bg-gray-50 rounded-xl border">
                 <div className="w-16 h-16 bg-divine-orange rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-8 h-8 text-white" />
+                  <Shield className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-3">
-                  24/7 Support
+                  Secure Shopping
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Round-the-clock premium customer support with instant chat
-                  assistance and expert product guidance
+                   Safe and encrypted payments with multiple options including UPI, PayTM, PhonePe, Google Pay and wallets
                 </p>
               </div>
             </div>
