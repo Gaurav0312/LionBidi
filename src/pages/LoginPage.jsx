@@ -30,7 +30,7 @@ const LoginPage = () => {
     password: "",
   });
 
-  // Add this to your LoginPage component
+  
   useEffect(() => {
   // Handle OAuth redirect errors
   const urlParams = new URLSearchParams(window.location.search);
