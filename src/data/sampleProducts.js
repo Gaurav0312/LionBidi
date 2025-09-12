@@ -10,12 +10,12 @@ export const sampleProducts = [
     price: 280,
     originalPrice: 400,
     discount: 30,
-    image: "/LionBidi.jpg",
+    image: "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg",
     category: "BEEDI",
     brand: "Lion Bidi",
     inStock: true,
     bestseller: true,
-    minQuantity: 2, // Add this line - minimum 2 pieces
+    minQuantity: 1, // Add this line - minimum 1 piece
     //maxQuantity: 10
   },
   {
@@ -25,12 +25,12 @@ export const sampleProducts = [
     price: 210,
     originalPrice: 300,
     discount: 30,
-    image: "/LionbidiSmall.jpg",
+    image: "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644249/LionBidiSmall_cq01ov.jpg",
     category: "BEEDI",
     brand: "Lion Bidi",
     inStock: true,
     bestseller: true,
-    minQuantity: 2, // Different minimum for small pack
+    minQuantity: 1, // Different minimum for small pack
     //maxQuantity: 15
   },
 ];
