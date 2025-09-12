@@ -39,7 +39,7 @@ const productData = {
     discount: 30,
     rating: 4.5,
     reviewCount: 54,
-    minQuantity: 2,
+    minQuantity: 1,
     bulkPricing: [
       { minQty: 10, discount: 10, label: "Buy 10+ pieces: Save ₹10 each" },
       { minQty: 20, discount: 15, label: "Buy 20+ pieces: Save ₹15 each" },
@@ -50,7 +50,7 @@ const productData = {
     description:
       "Experience the authentic natural taste with our Premium Special Lion Bidi (Big). Handcrafted with the finest tobacco leaves for the ultimate smoking experience. Each bidi is hand-rolled by skilled artisans, guaranteeing a consistent and impeccably crafted product.",
     images: [
-      "/LionBidi.jpg",
+      "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817964/Pack_sn7kgz.png", // In real app, these would be different angles
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817922/Bidi_iz0x7a.jpg",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817934/Big_niemxu.jpg",
@@ -114,7 +114,7 @@ const productData = {
     description:
       "Compact version of our premium bidi collection. Perfect for those who want to try our premium quality in a smaller quantity. Hand-rolled with the same attention to detail as our larger packs.",
     images: [
-      "/LionBidi.jpg",
+      "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644249/LionBidiSmall_cq01ov.jpg",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817964/Pack_sn7kgz.png",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817974/Small_qo6ylj.jpg",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817922/Bidi_iz0x7a.jpg",
