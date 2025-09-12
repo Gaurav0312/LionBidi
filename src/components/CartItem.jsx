@@ -1,6 +1,6 @@
 // src/components/CartItem.jsx
 import React from "react";
-import { Minus, Plus, Trash2, Flame } from "lucide-react";
+import { Minus, Plus, Trash2 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
 // Premium-white CartItem (discount-aware)
@@ -33,9 +33,9 @@ const CartItem = ({ item }) => {
           />
 
           {/* small badge */}
-          <span className="absolute -top-1 -right-1 p-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 shadow">
+          {/* <span className="absolute -top-1 -right-1 p-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 shadow">
             <Flame className="w-3 h-3 text-white" />
-          </span>
+          </span> */}
         </div>
 
         {/* Details */}
