@@ -42,7 +42,7 @@ const About = () => {
         {/* Image */}
         <div className="rounded-2xl overflow-hidden shadow-lg border border-orange-200">
           <img
-            src="/LionBidi.jpg"
+            src="https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg"
             alt="Lion Bidi Pack"
             className="w-full h-full object-cover"
           />
