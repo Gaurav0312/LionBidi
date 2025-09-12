@@ -14,9 +14,10 @@ import {
   MapPin,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../utils/api";
 
 const RegisterPage = () => {
-  const { login, setCurrentPage } = useAppContext();
+  const { login, } = useAppContext();
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -185,94 +186,98 @@ const RegisterPage = () => {
   };
 
   const handleSendEmailOtp = async () => {
-    setError("");
-    setLoading(true);
+  setError("");
+  setLoading(true);
+  
+  try {
+    console.log("Attempting to send OTP to:", formData.email);
+    console.log("API endpoint:", `${BASE_URL}/api/auth/send-registration-otp`);
+    
+    // First check availability
+    const checkResponse = await fetch(
+      `${BASE_URL}/api/auth/check-availability`,
+      {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          phone: formData.phone,
+        }),
+      }
+    );
 
-    try {
-      // First check if email/phone already exists
-      const checkResponse = await fetch(
-        "https://lion-bidi-backend.onrender.com/api/auth/check-availability",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email.toLowerCase().trim(),
-            phone: formData.phone,
-          }),
-        }
-      );
-
+    if (!checkResponse.ok) {
       const checkData = await checkResponse.json();
-
-      if (!checkResponse.ok) {
-        setError(checkData.message || "Email or phone number already exists");
-        setLoading(false);
-        return;
-      }
-
-      // Send Email OTP
-      const emailOtpResponse = await fetch(
-        
-        "https://lion-bidi-backend.onrender.com/api/auth/send-registration-otp",
-                                                                                              
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email.toLowerCase().trim(),
-            name: formData.name.trim(),
-          }),
-        }
-      );
-
-      const emailOtpData = await emailOtpResponse.json();
-
-      if (emailOtpResponse.ok) {
-        setStep(3);
-        setEmailOtpSent(true);
-        alert("Verification code sent to your email");
-
-        // Start countdown
-        setEmailResendCooldown(30);
-        const timer = setInterval(() => {
-          setEmailResendCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        setError(
-          emailOtpData.message || "Failed to send email verification code"
-        );
-      }
-    } catch (err) {
-      console.error("Email OTP error:", err);
-      setError("Network error occurred. Please try again.");
-      setEmailOtpSent(false);
-    } finally {
+      setError(checkData.message || "Email or phone number already exists");
       setLoading(false);
+      return;
     }
-  };
+
+    // Send Email OTP
+    const emailOtpResponse = await fetch(
+      `${BASE_URL}/api/auth/send-registration-otp`,
+      {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          name: formData.name.trim(),
+        }),
+      }
+    );
+
+    const emailOtpData = await emailOtpResponse.json();
+    
+    if (emailOtpResponse.ok) {
+      console.log("OTP sent successfully:", emailOtpData);
+      setStep(3);
+      setEmailOtpSent(true);
+      alert("Verification code sent to your email");
+      
+      // Start countdown
+      setEmailResendCooldown(30);
+      const timer = setInterval(() => {
+        setEmailResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      console.error("OTP send failed:", emailOtpData);
+      setError(emailOtpData.message || "Failed to send email verification code");
+    }
+  } catch (err) {
+    console.error("Email OTP error:", err);
+    setError(`Network error: ${err.message}`);
+    setEmailOtpSent(false);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const resendEmailOtp = async () => {
     if (emailResendCooldown > 0) return;
 
     try {
       setLoading(true);
-      const response = await fetch(
-        "https://lion-bidi-backend.onrender.com/api/auth/send-email-otp",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email,
-            type: "verification",
-          }),
-        }
-      );
+      const response = await fetch(`${BASE_URL}/api/auth/send-email-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          name: formData.name.trim(),
+        }),
+      });
 
       const data = await response.json();
 
@@ -295,6 +300,7 @@ const RegisterPage = () => {
         setError(data.message || "Failed to resend email OTP");
       }
     } catch (err) {
+      console.error("Resend OTP error:", err);
       setError("Network error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -340,14 +346,11 @@ const RegisterPage = () => {
           : null,
       };
 
-      const response = await fetch(
-        "https://lion-bidi-backend.onrender.com/api/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(registrationData),
-        }
-      );
+      const response = await fetch(`${BASE_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registrationData),
+      });
 
       const data = await response.json();
 
@@ -373,7 +376,7 @@ const RegisterPage = () => {
 
         // Show success message and redirect
         alert("Registration successful! Welcome to Lion Bidi!");
-        setCurrentPage("home");
+        navigate("/");
       } else {
         setError(data.message || "Registration failed. Please try again.");
         // Reset OTPs on failed registration
@@ -410,7 +413,7 @@ const RegisterPage = () => {
           <div className="flex items-center justify-between">
             <button
               onClick={() => handleNavigate("/")}
-              className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors p-2 -ml-2 rounded-lg hover:bg-orange-50"
+              className="flex items-center gap-2 text-gray-600 hover:text-divine-orange transition-colors p-2 -ml-2 rounded-lg hover:bg-orange-50"
             >
               <ArrowLeft size={20} />
               <span className="hidden sm:inline">
@@ -451,17 +454,17 @@ const RegisterPage = () => {
                 className="h-12 sm:h-16 w-auto"
               />
               <div className="ml-2 sm:ml-3">
-                <h1 className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 bg-clip-text text-transparent">
-                  Lion Bidi
+                <h1 className="text-3xl sm:text-xl font-extrabold bg-[#FF6B35] bg-clip-text text-transparent">
+                  LION BIDI
                 </h1>
-                <p className="text-xs text-orange-500 font-medium tracking-wide">
-                  Premium Quality
-                </p>
+                {/* <p className="text-xs text-orange-500 font-medium tracking-wide">
+                  Special Bidi
+                </p> */}
               </div>
             </div>
 
             {/* Step Title */}
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold  text-gray-900 mb-2">
               {step === 1
                 ? "Create Account"
                 : step === 2
@@ -469,18 +472,18 @@ const RegisterPage = () => {
                 : "Verify Email"}
             </h2>
 
-            <p className="text-gray-600 text-sm sm:text-base px-2">
+            <p className="text-gray-600 text-sm sm:text-base font-serif font-normal px-2">
               {step === 1
-                ? "Join Lion Bidi for premium quality products"
+                ? "Join Lion Bidi for premium quality bidi"
                 : step === 2
                 ? "Add your address (optional)"
                 : "Enter the verification code sent to your email"}
             </p>
 
             {/* Premium Badge - Mobile Optimized */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg mt-3 sm:mt-4">
+            <div className="inline-flex items-center gap-2 bg-[#FF6B35] text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg mt-3 sm:mt-4">
               <Crown size={14} className="sm:w-4 sm:h-4" />
-              <span>Premium Experience</span>
+              <span className="font-serif">Special Bidi</span>
               <Sparkles size={14} className="sm:w-4 sm:h-4" />
             </div>
 
@@ -507,7 +510,7 @@ const RegisterPage = () => {
               <div className="text-xs text-gray-500 mb-2">Step {step} of 3</div>
               <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div
-                  className="bg-gradient-to-r from-orange-500 to-red-500 h-1.5 rounded-full transition-all duration-300"
+                  className="bg-[#FF6B35] h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${(step / 3) * 100}%` }}
                 />
               </div>
@@ -543,7 +546,7 @@ const RegisterPage = () => {
                         type="text"
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-3 py-3 sm:py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base"
+                        className="w-full pl-10 pr-3 py-3 sm:py-3.5 font-serif border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base"
                         placeholder="Enter your full name"
                         maxLength={50}
                         required
@@ -571,7 +574,7 @@ const RegisterPage = () => {
                         type="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-3 py-3 sm:py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base"
+                        className="w-full pl-10 pr-3 py-3 sm:py-3.5 font-normal border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base"
                         placeholder="Enter your email address"
                         required
                       />
@@ -594,7 +597,7 @@ const RegisterPage = () => {
                         type="tel"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="w-full pl-12 pr-3 py-3 sm:py-3.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base"
+                        className="w-full pl-12 pr-3 py-3 sm:py-3.5 font-normal border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base"
                         placeholder="Enter 10-digit phone number"
                         maxLength={10}
                         required
@@ -739,7 +742,7 @@ const RegisterPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Confirm Password *
                     </label>
-                    <div className="relative">
+                    <div className="relative font-serif">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Lock
                           size={18}
@@ -800,37 +803,37 @@ const RegisterPage = () => {
 
                   {/* Enhanced Checkboxes for Mobile */}
                   <div className="space-y-3">
-                    <label className="flex items-start space-x-3 cursor-pointer p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <label className="flex items-start space-x-3 cursor-pointer p-2 -mx-2 rounded-lg  transition-colors">
                       <input
                         type="checkbox"
                         checked={ageVerified}
                         onChange={(e) => setAgeVerified(e.target.checked)}
-                        className="w-4 h-4 mt-1 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                        className="w-4 h-4 mt-1 text-divine-orange  border-gray-300 rounded"
                       />
                       <span className="text-sm text-gray-700 font-medium leading-relaxed">
                         I confirm that I am 18 years of age or older *
                       </span>
                     </label>
 
-                    <label className="flex items-start space-x-3 cursor-pointer p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <label className="flex items-start space-x-3 cursor-pointer p-2 -mx-2 rounded-lg transition-colors">
                       <input
                         type="checkbox"
                         checked={agreedToTerms}
                         onChange={(e) => setAgreedToTerms(e.target.checked)}
-                        className="w-4 h-4 mt-1 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                        className="w-4 h-4 mt-1 text-divine-orange focus:ring-orange-500 border-gray-300 rounded"
                       />
                       <span className="text-sm text-gray-700 font-medium leading-relaxed">
                         I agree to the{" "}
                         <button
                           type="button"
-                          className="text-orange-600 underline hover:text-orange-500 font-semibold"
+                          className="text-divine-orange underline hover:text-orange-500 font-semibold"
                         >
                           Terms of Service
                         </button>{" "}
                         and{" "}
                         <button
                           type="button"
-                          className="text-orange-600 underline hover:text-orange-500 font-semibold"
+                          className="text-divine-orange underline hover:text-orange-500 font-semibold"
                         >
                           Privacy Policy
                         </button>{" "}
@@ -962,13 +965,13 @@ const RegisterPage = () => {
                     <p className="text-sm text-gray-600 mb-2">
                       We've sent a 6-digit verification code to:
                     </p>
-                    <p className="text-sm font-semibold text-orange-600 break-all">
+                    <p className="text-base font-semibold text-divine-orange break-all">
                       {formData.email}
                     </p>
                   </div>
 
                   {/* ------- Loading or Sent Message ------- */}
-                  <div className="text-center mb-4">
+                  {/* <div className="text-center mb-4">
                     {!emailOtpSent ? (
                       <div>
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
@@ -981,7 +984,7 @@ const RegisterPage = () => {
                         ✓ Verification code sent to {formData.email}
                       </p>
                     )}
-                  </div>
+                  </div> */}
 
                   {/* ------- OTP Input and Actions only when Sent ------- */}
                   {emailOtpSent && (
@@ -1003,7 +1006,7 @@ const RegisterPage = () => {
                               handleEmailOtpChange(index, e.target.value)
                             }
                             onKeyDown={(e) => handleEmailOtpKeyDown(index, e)}
-                            className="w-10 h-12 sm:w-12 sm:h-14 text-center border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg sm:text-xl font-bold transition-all"
+                            className="w-10 h-12 sm:w-12 sm:h-14 text-center border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-divine-orange focus:border-orange-500 text-lg sm:text-xl font-bold transition-all"
                           />
                         ))}
                       </div>
@@ -1014,7 +1017,7 @@ const RegisterPage = () => {
                           type="button"
                           onClick={resendEmailOtp}
                           disabled={emailResendCooldown > 0 || loading}
-                          className="text-sm text-orange-600 hover:text-orange-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                          className="text-sm text-divine-orange hover:text-orange-600 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
                         >
                           {emailResendCooldown > 0
                             ? `Resend Code (${emailResendCooldown}s)`
@@ -1045,7 +1048,7 @@ const RegisterPage = () => {
                 disabled={
                   loading || (step === 1 && (!agreedToTerms || !ageVerified))
                 }
-                className="w-full py-3.5 sm:py-4 px-4 bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 hover:from-orange-500 hover:via-red-500 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
+                className="w-full py-3.5 sm:py-4 px-4 bg-[#FF6B35] hover:from-orange-500 hover:via-red-500 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
               >
                 {loading ? (
                   <>
@@ -1087,9 +1090,9 @@ const RegisterPage = () => {
                   Already have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => setCurrentPage("login")}
+                    onClick={() => navigate("/login")}
                     disabled={loading}
-                    className="text-orange-600 hover:text-orange-500 font-bold transition-colors disabled:opacity-50"
+                    className="text-divine-orange hover:text-orange-600 font-bold transition-colors disabled:opacity-50"
                   >
                     Sign in here
                   </button>
