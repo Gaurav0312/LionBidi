@@ -52,7 +52,7 @@ import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import Layout from "./components/Layout";
 
 // Backend API configuration
-const API_BASE_URL = "https://lion-bidi-backend.onrender.com";
+const API_BASE_URL = "http://localhost:5000";
 
 const App = () => {
   const navigate = useNavigate();
