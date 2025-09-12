@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAppContext } from "../context/AppContext";
+import { useNavigate } from "react-router-dom";
 import {
   Mail,
   ArrowLeft,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 const ForgotPasswordPage = () => {
-  const { setCurrentPage } = useAppContext();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [newPassword, setNewPassword] = useState("");
@@ -154,7 +154,7 @@ const ForgotPasswordPage = () => {
 
       if (response.ok) {
         alert("Password reset successfully! You can now login with your new password.");
-        setCurrentPage("login");
+        navigate("/login");
       } else {
         setError(data.message || "Failed to reset password");
       }
@@ -205,7 +205,7 @@ const ForgotPasswordPage = () => {
         <div className="p-3 sm:p-6">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => step === 1 ? setCurrentPage("login") : setStep(step - 1)}
+              onClick={() => step === 1 ? navigate("/login") : setStep(step - 1)}
               className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors p-2 -ml-2 rounded-lg hover:bg-orange-50"
             >
               <ArrowLeft size={20} />
@@ -430,7 +430,7 @@ const ForgotPasswordPage = () => {
             <p className="text-sm text-gray-500 mb-3 sm:mb-4">
               Remembered your password?{" "}
               <button
-                onClick={() => setCurrentPage("login")}
+                onClick={() => navigate("/login")}
                 className="text-orange-600 hover:text-orange-500 font-semibold transition-colors"
               >
                 Sign in here
