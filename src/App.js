@@ -329,7 +329,7 @@ const App = () => {
     setWishlist([]);
     toast.success("Logged out successfully");
 
-    // ✅ No redirect logic - stay on current page like before
+
   };
 
   /* ═══════════════════ CART HELPERS ═══════════════════ */
