@@ -1,5 +1,5 @@
 import React from "react";
-import { Mail, Phone, MapPin, Crown, Shield, Truck, Star } from "lucide-react";
+import { Mail, Phone, MapPin, Shield, Truck, Star } from "lucide-react";
 
 import { Link } from "react-router-dom";
 
