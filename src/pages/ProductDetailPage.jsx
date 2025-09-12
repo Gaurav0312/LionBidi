@@ -25,6 +25,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { generateSlug } from "../utils/slugify";
+import ProductCard from "../components/ProductCard";
 import HandCraftedIcon from "../components/HandCraftedIcon";
 
 // Updated product data structure - using slugs as keys
@@ -102,7 +103,7 @@ const productData = {
     discount: 30,
     rating: 4.3,
     reviewCount: 89,
-    minQuantity: 10,
+    minQuantity: 2,
     bulkPricing: [
       { minQty: 10, discount: 10, label: "Buy 10+ pieces: Save ₹10 each" },
       { minQty: 20, discount: 15, label: "Buy 20+ pieces: Save ₹15 each" },
@@ -195,18 +196,6 @@ const reviewsData = [
 ];
 
 // Updated similar products data with slugs
-const similarProducts = [
-  {
-    id: 2,
-    name: "Lion Bidi Small Pack",
-    slug: "lion-bidi-small-pack",
-    price: 280,
-    originalPrice: 400,
-    image: "/LionBidi.jpg",
-    rating: 4.5,
-    reviews: 24,
-  },
-];
 
 const ProductDetailPage = () => {
   const { slug } = useParams(); // Get product slug from URL
@@ -229,6 +218,16 @@ const ProductDetailPage = () => {
   //  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
+  const similarProducts = React.useMemo(() => {
+    if (!currentProduct) return [];
+    return Object.values(productData)
+      .filter((p) => p.slug !== currentProduct.slug)
+      .map((p) => ({
+        ...p,
+        image: p.images?.[0] || "/placeholder-image.jpg", // ✅ pick first image
+      }));
+  }, [currentProduct]);
+
   // Check if product is in wishlist
   // const isWishlisted = currentProduct
   //   ? wishlist.some((item) => item.id === currentProduct.id)
@@ -249,11 +248,6 @@ const ProductDetailPage = () => {
     const fetchProduct = () => {
       setLoading(true);
 
-      // In a real app, you'd fetch from an API
-      // const response = await fetch(`/api/products/slug/${slug}`);
-      // const productData = await response.json();
-
-      // For now, use local data with slug as key
       const product = productData[slug];
 
       if (product) {
@@ -322,7 +316,7 @@ const ProductDetailPage = () => {
     console.log("Stock count:", currentProduct.stockCount);
     console.log("Stock count type:", typeof currentProduct.stockCount);
 
-    const maxStock = parseInt(currentProduct.stockCount) || 1000;
+    const maxStock = parseInt(currentProduct.stockCount) || 10000;
     console.log("Max stock after parsing:", maxStock);
     console.log("Can increment?", quantity < maxStock);
 
@@ -354,7 +348,7 @@ const ProductDetailPage = () => {
 
     setIsAddingToCart(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Calculate bulk pricing
       const bulkCalc = calculateBulkPrice(
@@ -363,28 +357,35 @@ const ProductDetailPage = () => {
         currentProduct.bulkPricing
       );
 
-      // Create product with bulk pricing applied
+      // Create product with bulk pricing applied - FIXED VERSION
       const productToAdd = {
         ...currentProduct,
-        price: bulkCalc.price, // Use discounted price if applicable
-        originalPrice: bulkCalc.discount > 0 ? currentProduct.price : undefined,
-        bulkDiscount: bulkCalc.discount,
-        quantity: 1, // Since we're adding multiple times
+        _id: currentProduct.id, // Ensure consistent ID
+        id: currentProduct.id,
+        price: currentProduct.price, // Use discounted price if applicable
+        discountPrice: currentProduct.price,
+        originalPrice: currentProduct.originalPrice,
+        image: currentProduct.images?.[0] || currentProduct.image,
+        // Remove React nodes from the product object
+        benefits: undefined,
+        specifications: undefined,
+        features: currentProduct.features?.filter((f) => typeof f === "string"),
       };
 
-      // Add to cart with quantity
-      for (let i = 0; i < quantity; i++) {
-        addToCart(productToAdd);
-      }
+      console.log("Adding to cart:", { product: productToAdd, quantity });
+
+      // ✅ FIXED: Add once with the correct quantity
+      await addToCart(productToAdd, quantity, true);
 
       const message =
         bulkCalc.savings > 0
-          ? `Product added to cart! You saved ₹${bulkCalc.savings} with bulk pricing!`
-          : "Product added to cart successfully!";
+          ? `${quantity} items added to cart! You saved ₹${bulkCalc.savings} with bulk pricing!`
+          : `${quantity} items added to cart successfully!`;
 
       setCartMessage(message);
       setTimeout(() => setCartMessage(""), 4000);
     } catch (error) {
+      console.error("Add to cart error:", error);
       setCartMessage("Failed to add product to cart");
       setTimeout(() => setCartMessage(""), 3000);
     } finally {
@@ -434,6 +435,23 @@ const ProductDetailPage = () => {
     } else {
       setShowShareModal(true);
     }
+  };
+
+  // Helper function to clean product data
+  const cleanProductForCart = (product) => {
+    const {
+      benefits, // Remove React nodes
+      specifications, // Keep this as it's just strings
+      ...cleanProduct
+    } = product;
+
+    return {
+      ...cleanProduct,
+      // Ensure we have proper image
+      image: product.images?.[0] || product.image,
+      // Filter out any React nodes from features if they exist
+      features: product.features?.filter((f) => typeof f === "string"),
+    };
   };
 
   // Copy to clipboard
@@ -494,30 +512,38 @@ const ProductDetailPage = () => {
 
   // Inside ProductDetailPage component
   const handleBuyNow = () => {
-  if (!user) {
-    openAuthModal();
-    return;
-  }
+    if (!user) {
+      openAuthModal();
+      return;
+    }
 
-  const bulkCalc = calculateBulkPrice(
-    quantity,
-    currentProduct.price,
-    currentProduct.bulkPricing
-  );
+    const bulkCalc = calculateBulkPrice(
+      quantity,
+      currentProduct.price,
+      currentProduct.bulkPricing
+    );
 
-  // Create a safe product object without React nodes
-  const productToBuy = {
-    id: currentProduct.id,
-    name: currentProduct.name,
-    price: bulkCalc.price,
-    quantity,
-    image: currentProduct.images ? currentProduct.images[0] : currentProduct.image,
+    // Create a safe product object without React nodes
+    const productToBuy = {
+      id: currentProduct.id,
+      name: currentProduct.name,
+      price: bulkCalc.price,
+      quantity,
+      image: currentProduct.images
+        ? currentProduct.images[0]
+        : currentProduct.image,
+    };
+
+    console.log("💳 Buy Now - Product data for address page:", productToBuy);
+
+    // 🔥 Navigate to ADDRESS page first (same as cart flow)
+    navigate("/address", {
+      state: {
+        product: productToBuy,
+        fromBuyNow: true, // Optional flag to identify buy now flow
+      },
+    });
   };
-
-  navigate("/checkout", { state: { product: productToBuy } });
-};
-
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50">
       {/* Cart Message */}
@@ -949,7 +975,7 @@ const ProductDetailPage = () => {
                     !currentProduct.inStock ||
                     quantity < (currentProduct.minQuantity || 1)
                   }
-                  className="flex-1 bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 hover:from-orange-500 hover:via-red-500 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  className="flex-1 bg-divine-orange hover:bg-divine-orange/90 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>
@@ -967,7 +993,6 @@ const ProductDetailPage = () => {
                         })()}
                   </span>
                 </button>
-                
 
                 {/* Keep existing wishlist and share buttons */}
                 <button
@@ -997,34 +1022,40 @@ const ProductDetailPage = () => {
               </div>
 
               <div className="mt-4">
-  <button
-    onClick={handleBuyNow}
-    disabled={!currentProduct.inStock}
-    className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-gray-300"
-  >
-    Buy Now
-  </button>
-</div>
+                <button
+                  onClick={handleBuyNow}
+                  disabled={!currentProduct.inStock}
+                  className="w-full bg-divine-orange hover:bg-divine-orange/90 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Buy Now
+                </button>
+              </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <button className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200">
-                  <Share className="w-5 h-5 text-orange-600" />
-                  <span className="text-sm text-orange-600 font-medium">
+                  <Share className="w-5 h-5 text-divine-orange" />
+                  <span className="text-sm text-divine-orange font-medium">
                     Share
                   </span>
                 </button>
-                <button className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200">
-                  <MessageCircle className="w-5 h-5 text-orange-600" />
-                  <span className="text-sm text-orange-600 font-medium">
+                <button
+                  onClick={() => navigate("/contact")}
+                  className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200"
+                >
+                  <MessageCircle className="w-5 h-5 text-divine-orange" />
+                  <span className="text-sm text-divine-orange font-medium">
                     Ask
                   </span>
                 </button>
-                <button className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200">
-                  <Phone className="w-5 h-5 text-orange-600" />
-                  <span className="text-sm text-orange-600 font-medium">
+                <a
+                  href="tel:+919589773525"
+                  className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200"
+                >
+                  <Phone className="w-5 h-5 text-divine-orange" />
+                  <span className="text-sm text-divine-orange font-medium">
                     Call
                   </span>
-                </button>
+                </a>
               </div>
             </div>
 
@@ -1067,7 +1098,7 @@ const ProductDetailPage = () => {
                       Easy Returns
                     </div>
                     <div className="text-sm text-gray-600">
-                      10 days return policy
+                      7 days return policy
                     </div>
                   </div>
                 </div>
@@ -1306,92 +1337,7 @@ const ProductDetailPage = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {similarProducts.map((product) => (
-              <div
-                key={product.id}
-                className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 overflow-hidden cursor-pointer"
-                onClick={() => handleSimilarProductClick(product.slug)} // CORRECTED: Use slug instead of ID
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter")
-                    handleSimilarProductClick(product.slug);
-                }}
-                aria-label={`View ${product.name}`}
-              >
-                <div className="aspect-square overflow-hidden relative">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  {product.originalPrice && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                      {Math.round(
-                        ((product.originalPrice - product.price) /
-                          product.originalPrice) *
-                          100
-                      )}
-                      % OFF
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors line-clamp-2">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(product.rating)
-                              ? "text-yellow-400 fill-current"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-gray-600 text-sm">
-                      ({product.reviews || product.rating})
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="text-lg font-bold text-orange-600">
-                      ₹{product.price}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-gray-400 line-through">
-                        ₹{product.originalPrice}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Add to cart logic for similar products
-                      if (!user) {
-                        openAuthModal();
-                        return;
-                      }
-                      // You might want to fetch the full product data here
-                      // For now, we'll create a minimal product object
-                      const productToAdd = {
-                        id: product.id,
-                        name: product.name,
-                        price: product.price,
-                        image: product.image,
-                        slug: product.slug,
-                      };
-                      addToCart(productToAdd);
-                    }}
-                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white py-2 rounded-lg font-medium transition-all"
-                    aria-label={`Add ${product.name} to cart`}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
+              <ProductCard key={product._id || product.id} product={product} />
             ))}
           </div>
         </div>
