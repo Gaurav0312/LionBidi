@@ -36,7 +36,7 @@ const ForgotPasswordPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/forgot-password", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim() }),
@@ -93,7 +93,7 @@ const ForgotPasswordPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/verify-reset-otp", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/verify-reset-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -140,7 +140,7 @@ const ForgotPasswordPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/reset-password", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,7 +171,7 @@ const ForgotPasswordPage = () => {
     
     setLoading(true);
     try {
-      await fetch("http://localhost:5000/api/auth/forgot-password", {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim() }),
@@ -229,7 +229,7 @@ const ForgotPasswordPage = () => {
                 <h1 className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 bg-clip-text text-transparent">
                   Lion Bidi
                 </h1>
-                <p className="text-xs text-orange-500 font-medium tracking-wide">
+                <p className="text-xs text-divine-orange font-medium tracking-wide">
                   Premium Quality
                 </p>
               </div>
@@ -431,7 +431,7 @@ const ForgotPasswordPage = () => {
               Remembered your password?{" "}
               <button
                 onClick={() => navigate("/login")}
-                className="text-orange-600 hover:text-orange-500 font-semibold transition-colors"
+                className="text-orange-600 hover:text-divine-orange font-semibold transition-colors"
               >
                 Sign in here
               </button>
