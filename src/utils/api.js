@@ -2,25 +2,34 @@
 import axios from 'axios';
 
 // Backend base URLs
-const BASE_URLS = {
-  localhost: "http://localhost:5000",
-  lan: "http://10.86.81.51:5000", 
-  production: "https://lion-bidi-backend.onrender.com"
+const BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:5000";
+
+  export const apiFetch = (endpoint, options = {}) => {
+  return fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    credentials: "include", // if you use cookies/auth
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
 };
 
 // Dynamically pick correct base URL
-let BASE_URL;
-if (window.location.hostname === "localhost") {
-  BASE_URL = BASE_URLS.localhost;
-} else if (window.location.hostname.startsWith("10.86.")) {
-  BASE_URL = BASE_URLS.lan;
-} else {
-  BASE_URL = BASE_URLS.production;
-}
+// let BASE_URL;
+// if (window.location.hostname === "localhost") {
+//   BASE_URL = BASE_URLS.localhost;
+// } else if (window.location.hostname.startsWith("10.86.")) {
+//   BASE_URL = BASE_URLS.lan;
+// } else {
+//   BASE_URL = BASE_URLS.production;
+// }
 
 // Create axios instance
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   withCredentials: true,
   timeout: 10000,
   headers: {
