@@ -1,16 +1,16 @@
 // components/AdminProtectedRoute.jsx
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 
 const AdminProtectedRoute = ({ children }) => {
-    const API_BASE_URL = "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const verifyAdmin = async () => {
-      const token = localStorage.getItem('adminToken');
-      
+      const token = localStorage.getItem("adminToken");
+
       if (!token) {
         setIsAuthenticated(false);
         setLoading(false);
@@ -20,19 +20,19 @@ const AdminProtectedRoute = ({ children }) => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/admin/verify`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (response.ok) {
           setIsAuthenticated(true);
         } else {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminData');
+          localStorage.removeItem("adminToken");
+          localStorage.removeItem("adminData");
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Admin verification error:', error);
+        console.error("Admin verification error:", error);
         setIsAuthenticated(false);
       } finally {
         setLoading(false);
