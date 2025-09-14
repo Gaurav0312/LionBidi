@@ -1,4 +1,4 @@
-// src/App.js
+//App.js - Updated with Orders route
 import React, { useState, useEffect } from "react";
 import {
   Routes,
@@ -33,15 +33,23 @@ import ScrollToTop from "./components/ScrollToTop";
 import AuthModal from "./components/AuthModal";
 import ForgotPasswordPage from "./components/ForgotPasswordPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
-
 import GoogleAuthCallback from "./pages/GoogleAuthCallback";
+
 import AdminLogin from "./pages/AdminLogin";
 import AdminPaymentVerification from "./pages/AdminPaymentVerification";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminLayout from "./components/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOrders from "./pages/AdminOrders";
+import AdminUsers from "./pages/AdminUsers";
+import AdminSettings from "./pages/AdminSettings";
+import AdminAnalytics from "./pages/AdminAnalytics";
 
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
 import WishlistPage from "./pages/WishlistPage";
+import OrdersPage from "./pages/OrdersPage";
+import OrderTrackingPage from "./pages/OrderTrackingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import RefundPolicy from "./components/RefundPolicy/RefundPolicy";
@@ -52,7 +60,7 @@ import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import Layout from "./components/Layout";
 
 // Backend API configuration
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const App = () => {
   const navigate = useNavigate();
@@ -65,14 +73,14 @@ const App = () => {
   const reduxCartItems = useSelector((state) => state.cart.items);
   const reduxWishlistItems = useSelector((state) => state.wishlist.items);
 
-  /* ═══════════════════ LOCAL STATE ═══════════════════ */
+  /* ═══════════════════════════ LOCAL STATE ═══════════════════════════ */
   const [user, setUser] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userAddress, setUserAddress] = useState(null);
 
-  /* ═══════════════════ AUTH-MODAL STATE ═══════════════════ */
+  /* ═══════════════════════════ AUTH-MODAL STATE ═══════════════════════════ */
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const openAuthModal = () => setAuthModalOpen(true);
   const closeAuthModal = () => setAuthModalOpen(false);
@@ -109,7 +117,7 @@ const App = () => {
     } catch (error) {
       console.error("Error fetching cart from server:", error);
       if (error.response?.status !== 401) {
-       // toast.error("Failed to load cart from server");
+        // toast.error("Failed to load cart from server");
       }
     }
   };
@@ -153,7 +161,7 @@ const App = () => {
         error.response?.data || error
       );
       if (error.response?.status !== 401) {
-       // toast.error("Failed to load wishlist from server");
+        // toast.error("Failed to load wishlist from server");
       }
     }
   };
@@ -251,7 +259,7 @@ const App = () => {
     }
   }, [reduxWishlistItems]);
 
-  /* ═══════════════════ AUTH HELPERS ═══════════════════ */
+  /* ═══════════════════════════ AUTH HELPERS ═══════════════════════════ */
   // In App.js - Update your login function
   const login = async (userData) => {
     console.log("=== LOGIN FUNCTION CALLED ===");
@@ -285,7 +293,7 @@ const App = () => {
           await fetchCartFromServer();
         } catch (error) {
           console.error("Error merging cart:", error);
-         // toast.error("Failed to sync cart, but login successful");
+          // toast.error("Failed to sync cart, but login successful");
         }
       }
 
@@ -295,11 +303,11 @@ const App = () => {
             items: guestWishlist,
           });
           localStorage.removeItem("wishlist");
-         // toast.success("Wishlist synced with your account");
+          // toast.success("Wishlist synced with your account");
           await fetchWishlistFromServer();
         } catch (error) {
           console.error("Error merging wishlist:", error);
-         // toast.error("Failed to sync wishlist, but login successful");
+          // toast.error("Failed to sync wishlist, but login successful");
         }
       }
 
@@ -328,11 +336,9 @@ const App = () => {
     setCartItems([]);
     setWishlist([]);
     toast.success("Logged out successfully");
-
-
   };
 
-  /* ═══════════════════ CART HELPERS ═══════════════════ */
+  /* ═══════════════════════════ CART HELPERS ═══════════════════════════ */
   const addToCart = async (product, quantity = 1) => {
     if (user || reduxIsLoggedIn) {
       try {
@@ -341,7 +347,7 @@ const App = () => {
 
         const response = await api.post("/api/cart/add", {
           productId: productId,
-          quantity: quantity, // ✅ Send the actual quantity
+          quantity: quantity,
           productData: {
             _id: productId,
             name: product.name,
@@ -356,7 +362,6 @@ const App = () => {
 
         if (response.data.success) {
           setCartItems(response.data.cart || []);
-          //toast.success(`${quantity} x ${product.name} added to cart`);
         } else {
           // toast.error(response.data.message || "Failed to add to cart");
         }
@@ -378,7 +383,7 @@ const App = () => {
         if (existing) {
           updated = prev.map((i) =>
             (i._id || i.id) === productId
-              ? { ...i, quantity: i.quantity + quantity } // ✅ Add the specified quantity
+              ? { ...i, quantity: i.quantity + quantity }
               : i
           );
         } else {
@@ -386,7 +391,7 @@ const App = () => {
             ...prev,
             {
               ...product,
-              quantity: quantity, // ✅ Set the correct initial quantity
+              quantity: quantity,
               id: productId,
               _id: productId,
             },
@@ -418,14 +423,11 @@ const App = () => {
         if (response.data.success) {
           console.log("✅ Cart updated successfully on server");
           setCartItems(response.data.cart || []);
-          //toast.success("Cart updated");
         } else {
           console.error("❌ Server returned error:", response.data.message);
-         // toast.error(response.data.message || "Failed to update cart");
         }
       } catch (error) {
         console.error("❌ Error updating cart on server:", error);
-        //toast.error("Failed to update cart");
       }
     } else {
       // Guest user logic
@@ -450,11 +452,9 @@ const App = () => {
 
         if (response.data.success) {
           setCartItems(response.data.cart || []);
-          //toast.success("Cart updated");
         }
       } catch (error) {
         console.error("Error updating cart:", error);
-       // toast.error("Failed to update cart");
       }
     } else {
       // Guest user logic
@@ -479,7 +479,6 @@ const App = () => {
         }
       } catch (error) {
         console.error("Error removing from cart:", error);
-       // toast.error("Failed to remove item");
       }
     } else {
       // Guest user logic
@@ -495,31 +494,26 @@ const App = () => {
 
   // Update clearCart
   const clearCart = async () => {
-  if (user || reduxIsLoggedIn) {
-    try {
-      await api.delete("/api/cart/clear");
+    if (user || reduxIsLoggedIn) {
+      try {
+        await api.delete("/api/cart/clear");
+        setCartItems([]);
+
+        toast.success("Cart cleared", {
+          id: "cart-cleared",
+        });
+      } catch (error) {
+        console.error("Error clearing cart:", error);
+      }
+    } else {
       setCartItems([]);
-      
-      // 🔥 Prevent duplicate toasts with unique ID
+      localStorage.removeItem("cart");
+
       toast.success("Cart cleared", {
-        id: 'cart-cleared',
+        id: "cart-cleared",
       });
-    } catch (error) {
-      console.error("Error clearing cart:", error);
-      // toast.error("Failed to clear cart", {
-      //   id: 'cart-clear-error',
-      // });
     }
-  } else {
-    setCartItems([]);
-    localStorage.removeItem("cart");
-    
-    // 🔥 Same unique ID for guest users
-    toast.success("Cart cleared", {
-      id: 'cart-cleared',
-    });
-  }
-};
+  };
 
   const getCartTotal = () =>
     cartItems.reduce((total, item) => {
@@ -531,7 +525,7 @@ const App = () => {
   const getCartItemsCount = () =>
     cartItems.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
 
-  /* ═══════════════════ WISHLIST HELPERS ═══════════════════ */
+  /* ═══════════════════════════ WISHLIST HELPERS ═══════════════════════════ */
   const addToWishlist = async (product) => {
     if (user || reduxIsLoggedIn) {
       try {
@@ -596,7 +590,6 @@ const App = () => {
         }
       } catch (error) {
         console.error("Error removing from wishlist:", error);
-        //toast.error("Failed to remove from wishlist");
       }
     } else {
       // Guest user logic
@@ -654,8 +647,6 @@ const App = () => {
             console.log("Wishlist state after update:", wishlist);
           }, 100);
 
-          //toast.success(response.data.message);
-
           // Optional Redux dispatch
           try {
             if (response.data.action === "added") {
@@ -668,14 +659,12 @@ const App = () => {
           }
         } else {
           console.error("API call unsuccessful:", response.data.message);
-          //toast.error(response.data.message || "Failed to update wishlist");
         }
       } catch (error) {
         console.error(
           "Toggle wishlist API error:",
           error.response?.data || error
         );
-        //toast.error("Failed to update wishlist");
       }
     } else {
       // Guest user logic
@@ -719,7 +708,7 @@ const App = () => {
     }
   };
 
-  /* ═══════════════════ CONTEXT VALUE ═══════════════════ */
+  /* ═══════════════════════════ CONTEXT VALUE ═══════════════════════════ */
   const contextValue = {
     user: user || reduxUser,
     cartItems,
@@ -797,10 +786,26 @@ const App = () => {
             <Route path="/admin" element={<Navigate to="/admin/login" />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route
-              path="/admin/payment-verification"
+              path="/admin/*"
               element={
                 <AdminProtectedRoute>
-                  <AdminPaymentVerification />
+                  <AdminLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route
+                        path="payment-verification"
+                        element={<AdminPaymentVerification />}
+                      />
+                      <Route path="orders" element={<AdminOrders />} />
+                      <Route path="users" element={<AdminUsers />} />
+                      <Route path="settings" element={<AdminSettings />} />
+                      <Route path="analytics" element={<AdminAnalytics />} />
+                      <Route
+                        path=""
+                        element={<Navigate to="/admin/dashboard" />}
+                      />
+                    </Routes>
+                  </AdminLayout>
                 </AdminProtectedRoute>
               }
             />
@@ -810,6 +815,30 @@ const App = () => {
               element={<OrderConfirmationPage />}
             />
             <Route path="/product/:slug" element={<ProductDetailPage />} />
+
+            {/* ✅ Add Orders Route */}
+            <Route
+              path="/orders"
+              element={
+                user || reduxIsLoggedIn ? (
+                  <OrdersPage />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+
+            <Route
+              path="/orders/:orderId/track"
+              element={
+                user || reduxIsLoggedIn ? (
+                  <OrderTrackingPage />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+
             <Route
               path="/wishlist"
               element={
