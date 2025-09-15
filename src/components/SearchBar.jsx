@@ -27,7 +27,7 @@ const SearchBar = ({
         <button
           type="submit"
           disabled={isLoading}
-          className={`flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold px-4 py-3 rounded-xl shadow hover:from-orange-600 hover:to-red-600 transition-all transform hover:scale-105 disabled:opacity-50 ${isMobile ? 'px-6 py-4 rounded-2xl' : 'xl:px-6'}`}
+          className={`flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold px-4 py-3 rounded-xl shadow hover:from-orange-600 hover:to-red-600 transition-all transform hover:scale-[1.02] disabled:opacity-50 ${isMobile ? 'px-6 py-4 rounded-2xl' : 'xl:px-6'}`}
         >
           {isLoading ? (
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
