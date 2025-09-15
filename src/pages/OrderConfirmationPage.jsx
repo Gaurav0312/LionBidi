@@ -107,23 +107,7 @@ const OrderConfirmationPage = () => {
     fetchOrder();
   }, [order, orderNumber, navigate]);
 
-  // useEffect(() => {
-  //   // Clear cart when order confirmation page loads
-  //   const clearCartAfterOrder = async () => {
-  //     try {
-  //       console.log('🛒 Clearing cart after successful order placement');
-  //       await clearCart();
-  //       localStorage.removeItem('cart');
-  //       console.log('✅ Cart cleared successfully');
-  //     } catch (error) {
-  //       console.error('❌ Error clearing cart:', error);
-  //     }
-  //   };
 
-  //   if (orderNumber) {
-  //     clearCartAfterOrder();
-  //   }
-  // }, [orderNumber, clearCart]);
 
   const shareOrder = async () => {
     if (!order) return;
@@ -257,7 +241,7 @@ Thank you for your order!
   const shippingAddress = order.shippingAddress || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-10 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 py-10 px-4">
       <div className="max-w-4xl mx-auto">
         {/* NEW: Verification Status Banner */}
         {isVerificationPending && (
@@ -284,8 +268,8 @@ Thank you for your order!
 
         {/* Success Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-orange-100 rounded-full mb-6">
+            <CheckCircle className="w-12 h-12 text-divine-orange" />
           </div>
 
           <h1 className="text-4xl font-extrabold text-gray-900 mb-3">
@@ -296,7 +280,7 @@ Thank you for your order!
           </p>
           <p className="text-lg text-gray-500">
             Your order{" "}
-            <span className="font-mono font-bold text-green-600">
+            <span className="font-mono font-bold text-divine-orange">
               #{order.orderNumber}
             </span>{" "}
             has been placed successfully.
@@ -306,7 +290,7 @@ Thank you for your order!
         {/* Order Summary Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
           {/* Card Header */}
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
+          <div className="bg-[#FF6B35] px-6 py-4">
             <div className="flex items-center justify-between text-white">
               <div>
                 <h2 className="text-xl font-bold">Order Summary</h2>
@@ -399,7 +383,7 @@ Thank you for your order!
           {/* Shipping Address */}
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center mb-4">
-              <Home className="w-6 h-6 text-blue-600 mr-3" />
+              <Home className="w-6 h-6 text-divine-orange mr-3" />
               <h3 className="text-lg font-semibold text-gray-900">
                 Delivery Address
               </h3>
@@ -435,7 +419,7 @@ Thank you for your order!
           {/* Order Status */}
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-center mb-4">
-              <Package className="w-6 h-6 text-green-600 mr-3" />
+              <Package className="w-6 h-6 text-divine-orange mr-3" />
               <h3 className="text-lg font-semibold text-gray-900">
                 Order Status
               </h3>
@@ -446,7 +430,7 @@ Thank you for your order!
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${
                     order.status === "confirmed"
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 text-divine-orange"
                       : order.status === "payment_submitted"
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-blue-100 text-blue-800"
@@ -462,7 +446,7 @@ Thank you for your order!
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${
                     paymentStatus === "verified"
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 text-divine-orange"
                       : paymentStatus === "pending_verification"
                       ? "bg-yellow-100 text-yellow-800"
                       : paymentStatus === "verification_failed"
@@ -512,7 +496,7 @@ Thank you for your order!
 
             {/* Order Placed */}
             <div className="relative flex items-center mb-6">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center relative z-10">
+              <div className="w-8 h-8 bg-[#FF6B35] rounded-full flex items-center justify-center relative z-10">
                 <CheckCircle className="w-5 h-5 text-white" />
               </div>
               <div className="ml-4">
@@ -528,7 +512,7 @@ Thank you for your order!
             {/* Payment Confirmed */}
             {order.confirmedAt && (
               <div className="relative flex items-center mb-6">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center relative z-10">
+                <div className="w-8 h-8 bg-[#FF6B35] rounded-full flex items-center justify-center relative z-10">
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
                 <div className="ml-4">
@@ -610,7 +594,7 @@ Thank you for your order!
           <div className="flex flex-wrap gap-4 justify-center">
             <button
               onClick={downloadReceipt}
-              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center px-6 py-3 bg-[#FF6B35] text-white rounded-lg hover:bg-[#FF6B35] transition-colors"
             >
               <Download className="w-5 h-5 mr-2" />
               Download Receipt
@@ -618,7 +602,7 @@ Thank you for your order!
 
             <button
               onClick={shareOrder}
-              className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {copied ? (
                 <>
@@ -635,7 +619,7 @@ Thank you for your order!
 
             <button
               onClick={() => navigate(`/orders/${order._id}/track`)}
-              className="flex items-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              className="flex items-center px-6 py-3 bg-[#FF6B35] text-white rounded-lg hover:bg-[#FF6B35] transition-colors"
             >
               <Truck className="w-5 h-5 mr-2" />
               Track Order
@@ -659,14 +643,14 @@ Thank you for your order!
           <div className="flex items-center justify-center space-x-6 text-sm">
             <a
               href="tel:+919589773525"
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center font-semibold text-divine-orange hover:underline"
             >
               <Phone className="w-4 h-4 mr-1" />
               +91 95897 73525
             </a>
             <a
               href="mailto:lionbidicompany@gmail.com"
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center font-semibold text-divine-orange hover:underline"
             >
               <Mail className="w-4 h-4 mr-1" />
               lionbidicompany@gmail.com
