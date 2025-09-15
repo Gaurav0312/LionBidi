@@ -7,9 +7,9 @@ import {
   Eye, 
   Phone, 
   Mail,
-  Download,
   Search
 } from 'lucide-react';
+import { BASE_URL } from '../utils/api';
 
 const AdminPaymentVerification = () => {
   const [pendingOrders, setPendingOrders] = useState([]);
@@ -28,18 +28,33 @@ const AdminPaymentVerification = () => {
 
   const fetchPendingVerifications = async () => {
     try {
-      const response = await fetch('/api/orders/admin/pending-verifications', {
+      console.log('🔄 Fetching pending verifications...');
+      
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${BASE_URL}/api/orders/admin/pending-verifications`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}` // Add admin auth
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('📊 Pending orders data:', data);
       
       if (data.success) {
         setPendingOrders(data.orders);
+        console.log(`✅ Found ${data.orders.length} pending orders`);
+      } else {
+        console.error('❌ API returned error:', data.message);
       }
     } catch (error) {
-      console.error('Error fetching pending verifications:', error);
+      console.error('❌ Error fetching pending verifications:', error);
     } finally {
       setLoading(false);
     }
@@ -47,11 +62,14 @@ const AdminPaymentVerification = () => {
 
   const verifyPayment = async (orderId, verified) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/admin/verify-payment`, {
+      console.log(`🔍 ${verified ? 'Verifying' : 'Rejecting'} payment for order: ${orderId}`);
+      
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${BASE_URL}/api/orders/${orderId}/admin/verify-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           verified,
@@ -67,10 +85,10 @@ const AdminPaymentVerification = () => {
         setVerificationNotes('');
         fetchPendingVerifications(); // Refresh list
       } else {
-        alert('Failed to update payment status');
+        alert('Failed to update payment status: ' + data.message);
       }
     } catch (error) {
-      console.error('Error verifying payment:', error);
+      console.error('❌ Error verifying payment:', error);
       alert('Error occurred while updating payment status');
     }
   };
