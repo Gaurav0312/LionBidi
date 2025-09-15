@@ -141,11 +141,11 @@ const ProductCard = ({ product }) => {
       <div className="relative overflow-hidden">
         <div className="aspect-square">
           <img
-            src={product.image || '/placeholder-image.jpg'}
-            alt={product.name || 'Product'}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             onError={(e) => {
-              e.target.src = '/placeholder-image.jpg';
+              e.target.src = 'https://res.cloudinary.com/dxqerqng1/image/upload/v1757644249/LionBidiSmall_cq01ov.jpg';
             }}
           />
         </div>
