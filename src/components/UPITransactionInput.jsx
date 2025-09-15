@@ -253,7 +253,7 @@ const UPITransactionInput = ({
           <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
           <div className="text-sm text-amber-800">
             <strong>Security Note:</strong> Each transaction ID can only be used once. 
-            We'll verify your payment within 24 hours before confirming your order.
+            We'll verify your payment within 1 hours before confirming your order.
           </div>
         </div>
       </div>
@@ -261,7 +261,7 @@ const UPITransactionInput = ({
       <button
         onClick={handleSubmit}
         disabled={isConfirming || !transactionId.trim() || validationState.valid === false}
-        className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+        className="w-full px-4 py-3 bg-[#FF6B35] text-white rounded-lg hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {isConfirming ? "Submitting..." : "Confirm Payment"}
       </button>
