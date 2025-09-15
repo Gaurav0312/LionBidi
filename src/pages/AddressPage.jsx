@@ -594,7 +594,7 @@ const AddressPage = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-[#FF6B35] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="w-full bg-[#FF6B35] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center">
