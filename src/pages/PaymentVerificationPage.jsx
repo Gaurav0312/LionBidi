@@ -185,7 +185,7 @@ const PaymentVerificationPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-10 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -203,7 +203,7 @@ const PaymentVerificationPage = () => {
             ) : verificationStatus === "failed" ? (
               <XCircle className="w-12 h-12 text-red-600" />
             ) : (
-              <Clock className="w-12 h-12 text-yellow-600" />
+              <Clock className="w-12 h-12 text-divine-orange" />
             )}
           </div>
 
@@ -237,16 +237,16 @@ const PaymentVerificationPage = () => {
           )}
 
           {verificationStatus === "pending" && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
+            <div className="bg-white border-gray-200 rounded-lg p-4 mt-6">
               <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 mr-3" />
+                <AlertTriangle className="w-5 h-5 text-orange-600 mr-3" />
                 <div className="text-left">
-                  <h3 className="font-semibold text-yellow-800">
+                  <h3 className="font-semibold text-orange-600">
                     Verification in Progress
                   </h3>
-                  <p className="text-yellow-700 text-sm">
+                  <p className="text-divine-orange text-sm">
                     We are verifying your payment details. This usually takes
-                    2-24 hours.
+                    1-2 hours.
                   </p>
                 </div>
               </div>
@@ -331,7 +331,7 @@ const PaymentVerificationPage = () => {
           <button
             onClick={handleRefreshStatus}
             disabled={loading}
-            className="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center px-6 py-3 bg-[#FF6B35] text-white rounded-lg hover:scale-[1.02] transition-colors disabled:opacity-50"
           >
             <RefreshCw
               className={`w-5 h-5 mr-2 ${loading ? "animate-spin" : ""}`}
@@ -341,28 +341,28 @@ const PaymentVerificationPage = () => {
 
           <button
             onClick={() => navigate("/")}
-            className="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:scale-[1.02] transition-colors"
           >
             <Home className="w-5 h-5 mr-2" />
             Continue Shopping
           </button>
         </div>
 
-        {/* Debug Info (remove in production) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="bg-gray-100 p-4 rounded-lg text-sm">
-            <h3 className="font-medium mb-2">Debug Info:</h3>
-            <p>Polling Active: {pollingIntervalRef.current ? 'Yes' : 'No'}</p>
-            <p>Payment Status: {order.payment?.paymentStatus}</p>
-            <p>Last Polled: {lastPolled || 'Never'}</p>
-          </div>
-        )}
+        
 
         {/* Next Steps and Contact Support sections remain the same... */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             What happens next?
+
+            
           </h3>
+
+          <p className="text-gray-600 mb-2">
+            Your payment is being processed. You will receive a confirmation
+            email once the payment is verified.
+          </p>
+          
           
           {/* Rest of your existing content... */}
         </div>
@@ -380,14 +380,14 @@ const PaymentVerificationPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-6">
             <a
               href="tel:+919589773525"
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center text-divine-orange hover:underline"
             >
               <Phone className="w-4 h-4 mr-2" />
               +91 95897 73525
             </a>
             <a
               href="mailto:lionbidicompany@gmail.com"
-              className="flex items-center text-blue-600 hover:text-blue-800"
+              className="flex items-center text-divine-orange hover:underline"
             >
               <Mail className="w-4 h-4 mr-2" />
               lionbidicompany@gmail.com
