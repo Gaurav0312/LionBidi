@@ -32,7 +32,7 @@ import HandCraftedIcon from "../components/HandCraftedIcon";
 const productData = {
   "special-lion-bidi-big": {
     id: 1,
-    name: "SPECIAL LION BIDI ( BIG )",
+    name: "Special Lion Bidi ( Big )",
     slug: generateSlug("special-lion-bidi-big"),
     price: 280,
     originalPrice: 400,
@@ -975,7 +975,7 @@ const ProductDetailPage = () => {
                     !currentProduct.inStock ||
                     quantity < (currentProduct.minQuantity || 1)
                   }
-                  className="flex-1 bg-divine-orange hover:bg-divine-orange/90 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  className="flex-1 bg-divine-orange hover:bg-divine-orange/90 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>
@@ -1025,7 +1025,7 @@ const ProductDetailPage = () => {
                 <button
                   onClick={handleBuyNow}
                   disabled={!currentProduct.inStock}
-                  className="w-full bg-divine-orange hover:bg-divine-orange/90 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  className="w-full bg-divine-orange hover:bg-divine-orange/90 text-white font-bold py-4 px-6 rounded-full text-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Buy Now
                 </button>
@@ -1067,7 +1067,7 @@ const ProductDetailPage = () => {
 
               <div className="grid grid-cols-3 text-center sm:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-3">
-                  <Truck className="w-8 h-8 text-orange-500 mx-auto" />
+                  <Truck className="w-8 h-8 text-divine-orange mx-auto" />
                   <div>
                     <div className="font-medium text-gray-900">
                       Free Delivery
@@ -1151,7 +1151,7 @@ const ProductDetailPage = () => {
                   <ul className="space-y-3">
                     {currentProduct.features.map((feature, index) => (
                       <li key={index} className="flex items-start space-x-3">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="w-2 h-2 bg-[#FF6B35] rounded-full mt-2 flex-shrink-0"></div>
                         <span className="text-gray-700">{feature}</span>
                       </li>
                     ))}
