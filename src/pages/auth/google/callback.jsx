@@ -20,7 +20,7 @@ export default function GoogleAuthCallback() {
       return;
     }
 
-    axios.post('http://localhost:5000/api/auth/google-signin', { credential: code })
+    axios.post(`${process.env.REACT_APP_API_URL}/api/auth/google-signin`, { credential: code })
       .then(response => {
         console.log('Google login successful:', response.data);
         localStorage.setItem('token', response.data.token);
