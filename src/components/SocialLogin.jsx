@@ -28,7 +28,7 @@ export default function SocialLogin() {
 
       // Explicitly set the correct redirect URI
       const redirectUri = encodeURIComponent(
-        "http://localhost:3000/auth/google/callback"
+        "http://lionbidi.vercel.app/auth/google/callback"
       );
 
       // Google OAuth URL with all required parameters
