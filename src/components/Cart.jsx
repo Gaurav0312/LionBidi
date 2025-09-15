@@ -322,7 +322,7 @@ const Cart = ({ isCartOpen, setIsCartOpen, handleNavigate }) => {
             // Empty Cart State
             <div className="flex-1 flex flex-col items-center justify-center p-8">
               <div className="w-32 h-32 bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 rounded-full flex items-center justify-center mb-6">
-                <ShoppingCart size={48} className="text-orange-500" />
+                <ShoppingCart size={48} className="text-divine-orange" />
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
                 Your cart is empty
