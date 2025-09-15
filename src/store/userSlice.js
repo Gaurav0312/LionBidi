@@ -153,22 +153,25 @@ export const logoutUser = createAsyncThunk(
   "user/logoutUser", 
   async (_, { dispatch }) => {
     try {
-      // Call logout API
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
-    } catch (err) {
-      console.error("Logout API failed:", err.message);
-      // Continue with local logout even if API fails
+      // For JWT-based auth, we typically don't need a server call
+      // Just clear the client-side data
+      
+      // Clear local storage
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+
+      // Clear cart
+      dispatch({ type: "cart/clearCartReduxOnly" });
+
+      console.log("🔓 Redux: User logged out");
+      return true;
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if there's an error, still clear local data
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      return true;
     }
-
-    // Clear local storage
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-
-    // Clear cart
-    dispatch({ type: "cart/clearCartReduxOnly" });
-
-    console.log("🔐 Redux: User logged out");
-    return true;
   }
 );
 
