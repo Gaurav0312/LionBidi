@@ -9,7 +9,7 @@ const Contact = () => {
     email: "",
     message: "",
   });
-   const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,22 +20,23 @@ const Contact = () => {
     setLoading(true);
 
     // 1️⃣ Send email with EmailJS
-    emailjs.send(
-       process.env.REACT_APP_EMAILJS_SERVICE_ID,
-  process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-  {
-    name: formData.name,
-    email: formData.email,
-    message: formData.message,
-  },
-  process.env.REACT_APP_EMAILJS_PUBLIC_KEY
-    )
-    .then(() => console.log("✅ Email sent!"))
-    .catch(err => console.error("❌ Email error:", err));
+    emailjs
+      .send(
+        process.env.REACT_APP_EMAILJS_SERVICE_ID,
+        process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
+        {
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+        },
+        process.env.REACT_APP_EMAILJS_PUBLIC_KEY
+      )
+      .then(() => console.log("✅ Email sent!"))
+      .catch((err) => console.error("❌ Email error:", err));
 
     // 2️⃣ Save message to MongoDB
     try {
-      const res = await fetch("http://localhost:5000/api/contact", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -61,8 +62,8 @@ const Contact = () => {
         </h1>
         <p className="max-w-2xl mx-auto text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed">
           Whether you want to learn more about our products, need support, or
-            just want to connect, we’re always happy to hear from you. Reach out
-            using any of the methods below or drop us a quick message.
+          just want to connect, we’re always happy to hear from you. Reach out
+          using any of the methods below or drop us a quick message.
         </p>
       </div>
 
