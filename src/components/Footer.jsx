@@ -18,7 +18,7 @@ const Footer = () => {
                 <img
                   src="/lion.png"
                   alt="Lion Bidi"
-                  className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-105"
+                  className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
                 />
               </div>
               <div className="ml-2">
