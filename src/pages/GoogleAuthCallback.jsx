@@ -1,4 +1,4 @@
-// pages/GoogleAuthCallback.jsx - CORRECTED VERSION
+// pages/GoogleAuthCallback.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
@@ -63,16 +63,19 @@ const GoogleAuthCallback = () => {
         while (retryCount < maxRetries) {
           try {
             // ✅ ENSURE we're calling the right backend API
-            const apiUrl = process.env.REACT_APP_API_URL || BASE_URL || 'https://lion-bidi-backend.onrender.com';
+            const apiUrl =
+              process.env.REACT_APP_API_URL ||
+              BASE_URL ||
+              "https://lion-bidi-backend.onrender.com";
             const endpoint = `${apiUrl}/api/auth/google/callback`;
-            
+
             console.log(`🔗 Attempt ${retryCount + 1}: Calling ${endpoint}`);
 
             response = await fetch(endpoint, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Accept": "application/json", // ✅ Explicitly request JSON
+                Accept: "application/json", // ✅ Explicitly request JSON
               },
               body: JSON.stringify({
                 code,
@@ -89,7 +92,9 @@ const GoogleAuthCallback = () => {
             if (!contentType || !contentType.includes("application/json")) {
               const textResponse = await response.text();
               console.error("❌ Expected JSON but got:", textResponse);
-              throw new Error(`Server returned ${response.status}: ${textResponse}`);
+              throw new Error(
+                `Server returned ${response.status}: ${textResponse}`
+              );
             }
 
             data = await response.json();
@@ -108,8 +113,11 @@ const GoogleAuthCallback = () => {
               throw new Error(data.message || "Authentication failed");
             }
           } catch (fetchError) {
-            console.error(`❌ Fetch error attempt ${retryCount + 1}:`, fetchError);
-            
+            console.error(
+              `❌ Fetch error attempt ${retryCount + 1}:`,
+              fetchError
+            );
+
             if (retryCount < maxRetries - 1) {
               retryCount++;
               setMessage(
@@ -137,11 +145,13 @@ const GoogleAuthCallback = () => {
 
         // Update app context with user data
         console.log("Updating app context with user:", data.user);
-        const userDataWithTimestamp = {
+        const userDataWithToken = {
           ...data.user,
+          token: data.token,
+          email: data.user.email, 
           _loginTimestamp: Date.now(),
         };
-        await login(userDataWithTimestamp);
+        await login(userDataWithToken);
 
         setStatus("success");
         setMessage("Login successful! Redirecting...");
