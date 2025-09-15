@@ -1,13 +1,28 @@
-import React from "react";
-import { Truck, ShoppingCart, Phone, Star, Shield } from "lucide-react";
+import React, { useState} from "react";
+import { Truck, ShoppingCart, Star, Shield } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { sampleProducts } from "../data/sampleProducts";
 import ProductCard from "../components/ProductCard";
+import { useNavigate } from "react-router-dom";
 
 // Home Page Component with Divine Hindu Theme
 const HomePage = () => {
+  const navigate = useNavigate();
   const { setCurrentPage } = useAppContext();
+  const [isLoading, setIsLoading] = useState(false);
   const bestsellers = sampleProducts.filter((p) => p.bestseller);
+
+  const handleNavigate = async (path) => {
+    setIsLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      navigate(path);
+    } catch (error) {
+      window.location.href = path;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50">
@@ -40,7 +55,7 @@ const HomePage = () => {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 px-4 sm:px-0 lg:justify-start justify-center">
                   <button
-                    onClick={() => setCurrentPage("category")}
+                    onClick={() => handleNavigate("/product/special-lion-bidi-big")}
                     className="group relative bg-divine-orange hover:bg-divine-orange/90 text-white font-semibold py-4 sm:py-4 px-6 sm:px-8 rounded-lg text-base sm:text-lg transition-all duration-300 hover:shadow-lg w-full sm:w-auto"
                   >
                     <span className="relative flex items-center justify-center gap-2">
@@ -146,7 +161,7 @@ const HomePage = () => {
               {bestsellers.map((product, index) => (
                 <div
                   key={product.id}
-                  className="transform hover:scale-105 transition-transform duration-300"
+                  className="transform hover:scale-[1.02] transition-transform duration-300"
                 >
                   <ProductCard product={product} />
                 </div>
@@ -156,7 +171,7 @@ const HomePage = () => {
             {/* View All Button */}
             <div className="text-center mt-12 sm:mt-16 px-4 sm:px-0">
               <button
-                onClick={() => setCurrentPage("category")}
+                onClick={() => handleNavigate("/products")}
                 className="bg-divine-orange hover:bg-divine-orange/90 text-white font-semibold py-4 px-8 sm:px-12 rounded-lg text-base sm:text-lg transition-all duration-300 hover:shadow-lg"
               >
                 View All Products
