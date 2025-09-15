@@ -1,15 +1,15 @@
-// src/utils/api.js
+// src/utils/api.js - FIXED VERSION
 import axios from 'axios';
 
-// Backend base URLs
-const BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  "http://localhost:5000";
+// ✅ CORRECT: Always point to backend, never frontend
+const BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
 
-  export const apiFetch = (endpoint, options = {}) => {
+console.log('🔗 API BASE_URL configured as:', BASE_URL);
+
+export const apiFetch = (endpoint, options = {}) => {
   return fetch(`${BASE_URL}${endpoint}`, {
     ...options,
-    credentials: "include", // if you use cookies/auth
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -17,34 +17,24 @@ const BASE_URL =
   });
 };
 
-// Dynamically pick correct base URL
-// let BASE_URL;
-// if (window.location.hostname === "localhost") {
-//   BASE_URL = BASE_URLS.localhost;
-// } else if (window.location.hostname.startsWith("10.86.")) {
-//   BASE_URL = BASE_URLS.lan;
-// } else {
-//   BASE_URL = BASE_URLS.production;
-// }
-
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  baseURL: BASE_URL,
   withCredentials: true,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
+    console.log('🚀 API Request:', config.method?.toUpperCase(), config.baseURL + config.url);
     return config;
   },
   (error) => {
@@ -53,14 +43,14 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors globally
+// Response interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.config.url);
+    console.log('✅ API Response:', response.status, response.config.url);
     return response;
   },
   (error) => {
-    console.error('API Error:', error.response?.status, error.response?.data);
+    console.error('❌ API Error:', error.response?.status, error.response?.data);
     
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
