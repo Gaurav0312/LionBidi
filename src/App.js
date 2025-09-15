@@ -9,7 +9,8 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { selectUser, selectIsLoggedIn, logoutUser } from "./store/userSlice";
+import { selectUser, selectIsLoggedIn, logoutUser,loginUser as loginUserRedux, 
+  refreshUserState  } from "./store/userSlice";
 
 import {
   fetchWishlist,
@@ -216,15 +217,6 @@ const App = () => {
     initializeApp();
   }, []);
 
-  // Fetch cart and wishlist from server when user logs in
-  useEffect(() => {
-    if (user || reduxIsLoggedIn) {
-      console.log("User logged in, fetching data from server...");
-      fetchCartFromServer();
-      fetchWishlistFromServer();
-    }
-  }, [user, reduxIsLoggedIn]);
-
   useEffect(() => {
     if (user || reduxIsLoggedIn) {
       console.log("User logged in, fetching data from server...");
@@ -259,70 +251,162 @@ const App = () => {
     }
   }, [reduxWishlistItems]);
 
+  const handleGuestDataMerging = async () => {
+  try {
+    const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
+    const guestWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+
+    console.log("Guest data - Cart:", guestCart.length, "Wishlist:", guestWishlist.length);
+
+    // Handle cart merging
+    if (guestCart.length > 0) {
+      try {
+        const response = await api.post("/api/cart/merge", {
+          items: guestCart,
+        });
+        if (response.data.success) {
+          localStorage.removeItem("cart");
+          await fetchCartFromServer();
+          console.log("Cart merged successfully");
+        }
+      } catch (error) {
+        console.error("Error merging cart:", error);
+        // Don't fail login for cart merge errors
+      }
+    }
+
+    // Handle wishlist merging
+    if (guestWishlist.length > 0) {
+      try {
+        const response = await api.post("/api/wishlist/merge", {
+          items: guestWishlist,
+        });
+        if (response.data.success) {
+          localStorage.removeItem("wishlist");
+          await fetchWishlistFromServer();
+          console.log("Wishlist merged successfully");
+        }
+      } catch (error) {
+        console.error("Error merging wishlist:", error);
+        // Don't fail login for wishlist merge errors
+      }
+    }
+
+    // Fetch fresh data if no guest data to merge
+    if (guestCart.length === 0) {
+      await fetchCartFromServer();
+    }
+    if (guestWishlist.length === 0) {
+      await fetchWishlistFromServer();
+    }
+    
+    // Always fetch user address
+    await fetchUserAddress();
+
+  } catch (error) {
+    console.error("Error in guest data merging:", error);
+    // Don't fail login for data merging errors
+  }
+};
+
   /* ═══════════════════════════ AUTH HELPERS ═══════════════════════════ */
   // In App.js - Update your login function
   const login = async (userData) => {
-    console.log("=== LOGIN FUNCTION CALLED ===");
-    console.log("User data received:", userData);
+  console.log("=== LOGIN FUNCTION CALLED ===");
+  console.log("User data received:", userData);
 
-    try {
-      // Force a complete new object reference to trigger re-renders
+  try {
+    // Check if this is already processed user data (from successful auth) or login credentials
+    if (userData.token && userData.email) {
+      // This is already authenticated user data - Method 1 approach
+      console.log("Processing authenticated user data...");
+      
+      // Store token first
+      localStorage.setItem("token", userData.token);
+      
+      // Create user object with force-update fields
       const newUserData = {
         ...userData,
-        _timestamp: Date.now(), // Add timestamp to ensure object reference changes
+        _loginTimestamp: Date.now(),
+        _forceUpdate: Math.random().toString(36),
       };
 
-      // Update state first
+      // Update both local and Redux state
       setUser(newUserData);
       localStorage.setItem("user", JSON.stringify(newUserData));
+      
+      // Also update Redux state for consistency
+      dispatch(refreshUserState());
 
-      // Force a small delay to ensure state is updated
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      console.log("User state updated to:", newUserData);
 
-      // Rest of your login logic...
-      const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
-      const guestWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
-
-      if (guestCart.length > 0) {
-        try {
-          const response = await api.post("/api/cart/merge", {
-            items: guestCart,
-          });
-          localStorage.removeItem("cart");
-          // toast.success("Cart synced with your account");
-          await fetchCartFromServer();
-        } catch (error) {
-          console.error("Error merging cart:", error);
-          // toast.error("Failed to sync cart, but login successful");
-        }
-      }
-
-      if (guestWishlist.length > 0) {
-        try {
-          const response = await api.post("/api/wishlist/merge", {
-            items: guestWishlist,
-          });
-          localStorage.removeItem("wishlist");
-          // toast.success("Wishlist synced with your account");
-          await fetchWishlistFromServer();
-        } catch (error) {
-          console.error("Error merging wishlist:", error);
-          // toast.error("Failed to sync wishlist, but login successful");
-        }
-      }
-
-      if (guestCart.length === 0) await fetchCartFromServer();
-      if (guestWishlist.length === 0) await fetchWishlistFromServer();
-
+      // Handle guest data merging
+      await handleGuestDataMerging();
+      
+      // Close modal and show success
       closeAuthModal();
       toast.success("Login successful!");
 
-      console.log("Login function completed, user set to:", newUserData);
-    } catch (error) {
-      console.error("Error in login function:", error);
-      //toast.error("Login completed but some features may not work properly");
+      // Force component updates
+      window.dispatchEvent(new CustomEvent('user-state-changed', { 
+        detail: { user: newUserData, loggedIn: true } 
+      }));
+
+      return newUserData;
+
+    } else if (userData.email && userData.password) {
+      // These are login credentials - Method 2 approach
+      console.log("Processing login credentials via Redux...");
+      
+      const result = await dispatch(loginUserRedux({
+        email: userData.email,
+        password: userData.password
+      })).unwrap();
+
+      console.log("Redux login successful:", result.user);
+
+      // Sync local state immediately
+      setUser(result.user);
+
+      // Handle guest data merging (Redux might have already done this)
+      await handleGuestDataMerging();
+
+      // Force component updates
+      setTimeout(() => {
+        dispatch(refreshUserState());
+        console.log("Forced Redux state refresh");
+      }, 50);
+
+      // Close modal and show success
+      closeAuthModal();
+      toast.success("Login successful!");
+
+      // Force header re-render
+      window.dispatchEvent(new CustomEvent('user-state-changed', { 
+        detail: { user: result.user, loggedIn: true } 
+      }));
+
+      return result.user;
+
+    } else {
+      throw new Error("Invalid user data format");
     }
-  };
+
+  } catch (error) {
+    console.error("Login failed:", error);
+    
+    // Clear any partial auth data
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    setUser(null);
+    
+    const errorMessage = typeof error === 'string' ? error : 
+                        error.message || "Login failed. Please try again.";
+    toast.error(errorMessage);
+    
+    throw error;
+  }
+};
 
   // Update logout function
   const logout = async () => {
