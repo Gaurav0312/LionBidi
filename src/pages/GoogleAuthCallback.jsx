@@ -1,4 +1,4 @@
-// pages/GoogleAuthCallback.jsx
+// pages/GoogleAuthCallback.jsx - CORRECTED VERSION
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
@@ -9,7 +9,7 @@ const GoogleAuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAppContext();
-  const [status, setStatus] = useState("processing"); // 'processing', 'success', 'error'
+  const [status, setStatus] = useState("processing");
   const [message, setMessage] = useState("Setting up your account...");
 
   useEffect(() => {
@@ -52,10 +52,9 @@ const GoogleAuthCallback = () => {
 
         // Clear any existing state
         sessionStorage.removeItem("oauth_state");
-
         setMessage("Authenticating with our servers...");
 
-        // Add retry logic for the backend request
+        // ✅ CORRECT: Call the right endpoint with proper error handling
         let response;
         let data;
         const maxRetries = 3;
@@ -63,10 +62,17 @@ const GoogleAuthCallback = () => {
 
         while (retryCount < maxRetries) {
           try {
-            response = await fetch(`${BASE_URL}/api/auth/google/callback`, {
+            // ✅ ENSURE we're calling the right backend API
+            const apiUrl = process.env.REACT_APP_API_URL || BASE_URL || 'https://lion-bidi-backend.onrender.com';
+            const endpoint = `${apiUrl}/api/auth/google/callback`;
+            
+            console.log(`🔗 Attempt ${retryCount + 1}: Calling ${endpoint}`);
+
+            response = await fetch(endpoint, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                "Accept": "application/json", // ✅ Explicitly request JSON
               },
               body: JSON.stringify({
                 code,
@@ -75,8 +81,19 @@ const GoogleAuthCallback = () => {
               }),
             });
 
+            console.log(`📡 Response status: ${response.status}`);
+            console.log(`📡 Response headers:`, response.headers);
+
+            // ✅ Check if response is actually JSON before parsing
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              const textResponse = await response.text();
+              console.error("❌ Expected JSON but got:", textResponse);
+              throw new Error(`Server returned ${response.status}: ${textResponse}`);
+            }
+
             data = await response.json();
-            console.log("Backend response:", data);
+            console.log("✅ Backend response:", data);
 
             if (response.ok && data.success) {
               break; // Success, exit retry loop
@@ -85,12 +102,14 @@ const GoogleAuthCallback = () => {
               setMessage(
                 `Authentication attempt ${retryCount + 1} of ${maxRetries}...`
               );
-              await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
+              await new Promise((resolve) => setTimeout(resolve, 1000));
               continue;
             } else {
               throw new Error(data.message || "Authentication failed");
             }
           } catch (fetchError) {
+            console.error(`❌ Fetch error attempt ${retryCount + 1}:`, fetchError);
+            
             if (retryCount < maxRetries - 1) {
               retryCount++;
               setMessage(
@@ -118,7 +137,6 @@ const GoogleAuthCallback = () => {
 
         // Update app context with user data
         console.log("Updating app context with user:", data.user);
-        // Force a state update by creating a new object reference
         const userDataWithTimestamp = {
           ...data.user,
           _loginTimestamp: Date.now(),
@@ -128,7 +146,6 @@ const GoogleAuthCallback = () => {
         setStatus("success");
         setMessage("Login successful! Redirecting...");
 
-        // Wait a moment before redirecting to show success message
         setTimeout(() => {
           console.log("Navigating to homepage...");
           navigate("/", { replace: true });
