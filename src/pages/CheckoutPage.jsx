@@ -14,7 +14,6 @@ import {
   MapPin,
   Edit3,
   Upload,
-  RefreshCw,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { useAppContext } from "../context/AppContext";
@@ -58,15 +57,6 @@ const CheckoutPage = () => {
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [orderCreationError, setOrderCreationError] = useState(null);
 
-  // New states for order update functionality
-  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
-  const [orderUpdateError, setOrderUpdateError] = useState(null);
-  const [hasOrderChanged, setHasOrderChanged] = useState(false);
-  const [originalOrderData, setOriginalOrderData] = useState(null);
-  
-  // Local cart state to maintain cart even after clearing
-  const [localCart, setLocalCart] = useState(null);
-
   // Calculate cart data
   const calculateCartData = () => {
     if (product) {
@@ -80,15 +70,12 @@ const CheckoutPage = () => {
       };
     }
 
-    // Use local cart if available (after order creation)
-    const itemsToUse = localCart?.items || cartItems;
-
-    if (itemsToUse && itemsToUse.length > 0) {
+    if (cartItems && cartItems.length > 0) {
       let savings = 0;
       let totalQuantity = 0;
       let subtotal = 0;
 
-      itemsToUse.forEach((item) => {
+      cartItems.forEach((item) => {
         const itemQuantity = item.quantity || 0;
         const itemPrice = item.price || 0;
         const originalPrice = item.originalPrice || itemPrice;
@@ -119,7 +106,7 @@ const CheckoutPage = () => {
       const total = Math.max(0, subtotal - savings);
 
       return {
-        items: itemsToUse.map((item) => ({
+        items: cartItems.map((item) => ({
           id: item._id || item.id,
           _id: item._id || item.id,
           name: item.name,
@@ -130,7 +117,7 @@ const CheckoutPage = () => {
         total,
         savings,
         subtotal,
-        itemCount: itemsToUse.length,
+        itemCount: cartItems.length,
         isFromCart: true,
       };
     }
@@ -147,123 +134,15 @@ const CheckoutPage = () => {
 
   const cart = calculateCartData();
 
-  // Check if order has changed compared to original
-  const checkOrderChanged = () => {
-    if (!originalOrderData || !cart) {
-      return false;
-    }
-
-    // Compare total
-    if (Math.abs(originalOrderData.total - cart.total) > 0.01) {
-      return true;
-    }
-
-    // Compare items count
-    if (originalOrderData.items.length !== cart.items.length) {
-      return true;
-    }
-
-    // Compare each item
-    for (let i = 0; i < cart.items.length; i++) {
-      const currentItem = cart.items[i];
-      const originalItem = originalOrderData.items.find(
-        item => item.id === (currentItem.id || currentItem._id)
-      );
-
-      if (!originalItem) {
-        return true; // New item added
-      }
-
-      if (originalItem.quantity !== currentItem.quantity) {
-        return true; // Quantity changed
-      }
-    }
-
-    return false;
-  };
-
-  // Update existing order
-  const updateExistingOrder = async () => {
-    if (!createdOrder || !cart) {
-      console.log("No order to update or no cart data");
-      return;
-    }
-
-    setIsUpdatingOrder(true);
-    setOrderUpdateError(null);
-
-    try {
-      console.log("Updating order:", createdOrder._id);
-
-      const updatedOrderData = {
-        cartData: {
-          items: cart.items.map((item) => ({
-            id: item._id || item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image,
-          })),
-          total: cart.total,
-          subtotal: cart.subtotal || cart.total,
-          savings: cart.savings || 0,
-          itemCount: cart.items.length,
-        },
-      };
-
-      const response = await api.put(`/api/orders/${createdOrder._id}/update`, updatedOrderData);
-
-      if (response.data.success) {
-        const updatedOrder = response.data.order;
-        setCreatedOrder(updatedOrder);
-        
-        // Update original order data to new values
-        setOriginalOrderData({
-          total: updatedOrder.total,
-          items: updatedOrder.items,
-        });
-        
-        setHasOrderChanged(false);
-        console.log("Order updated successfully:", updatedOrder.orderNumber);
-
-        // Show success message
-        alert("Order updated successfully!");
-      } else {
-        throw new Error(response.data.message || "Order update failed");
-      }
-    } catch (error) {
-      console.error("Error updating order:", error);
-      
-      let errorMessage = "Failed to update order. Please try again.";
-      
-      if (error.response) {
-        errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
-      } else if (error.request) {
-        errorMessage = "Network error. Please check your internet connection.";
-      } else {
-        errorMessage = error.message;
-      }
-
-      setOrderUpdateError(errorMessage);
-      alert(errorMessage);
-    } finally {
-      setIsUpdatingOrder(false);
-    }
-  };
-
   // Create order when page loads if not already created
   useEffect(() => {
     const createOrder = async () => {
-      if (existingOrder) {
-        console.log("Using existing order:", existingOrder);
-        setCreatedOrder(existingOrder);
-        setOriginalOrderData({
-          total: existingOrder.total,
-          items: existingOrder.items,
-        });
-        return;
-      }
 
+      if (existingOrder) {
+      console.log("Using existing order:", existingOrder);
+      setCreatedOrder(existingOrder);
+      return;
+    }
       // More robust validation
       if (!user) {
         console.log("User not authenticated, cannot create order");
@@ -332,33 +211,20 @@ const CheckoutPage = () => {
         console.log("Order creation response:", response.data);
 
         if (response.data.success) {
-          const newOrder = response.data.order;
-          setCreatedOrder(newOrder);
-          
-          // Store original order data for comparison
-          setOriginalOrderData({
-            total: newOrder.total,
-            items: newOrder.items,
-          });
-          
-          // Store current cart items locally before clearing
-          setLocalCart({
-            items: cart.items,
-            total: cart.total,
-            subtotal: cart.subtotal,
-            savings: cart.savings,
-          });
-          
-          console.log("Order created successfully:", newOrder.orderNumber);
+          setCreatedOrder(response.data.order);
+          console.log(
+            "Order created successfully:",
+            response.data.order.orderNumber
+          );
 
           try {
-            console.log('🛒 Clearing cart after successful order creation');
-            await clearCart();
-            console.log('✅ Cart cleared successfully after order creation');
-          } catch (clearError) {
-            console.error('❌ Error clearing cart:', clearError);
-            // Don't fail the order creation if cart clearing fails
-          }
+          console.log('🛒 Clearing cart after successful order creation');
+          await clearCart();
+          console.log('✅ Cart cleared successfully after order creation');
+        } catch (clearError) {
+          console.error('❌ Error clearing cart:', clearError);
+          // Don't fail the order creation if cart clearing fails
+        }
         } else {
           throw new Error(response.data.message || "Order creation failed");
         }
@@ -368,10 +234,16 @@ const CheckoutPage = () => {
         let errorMessage = "Failed to create order. Please try again.";
 
         if (error.response) {
-          errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+          // Server responded with error status
+          errorMessage =
+            error.response.data?.message ||
+            `Server error: ${error.response.status}`;
         } else if (error.request) {
-          errorMessage = "Network error. Please check your internet connection.";
+          // Network error
+          errorMessage =
+            "Network error. Please check your internet connection.";
         } else {
+          // Other error
           errorMessage = error.message;
         }
 
@@ -388,19 +260,13 @@ const CheckoutPage = () => {
     return () => clearTimeout(timer);
   }, [user, cart?.total, addressData?.name, createdOrder, isCreatingOrder, clearCart, existingOrder]);
 
-  // Check for order changes
-  useEffect(() => {
-    if (createdOrder && cart) {
-      const changed = checkOrderChanged();
-      setHasOrderChanged(changed);
-    }
-  }, [cart, originalOrderData, createdOrder]);
-
   // Redirect if no data
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!product && !cart) {
-        console.log("No checkout data available after timeout, redirecting to home");
+        console.log(
+          "No checkout data available after timeout, redirecting to home"
+        );
         navigate("/");
       }
     }, 1000);
@@ -435,6 +301,17 @@ const CheckoutPage = () => {
     setShowPaymentConfirmation(true);
   };
 
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPaymentScreenshot(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const confirmPayment = async () => {
     if (!transactionId.trim()) {
       alert("Please enter transaction ID");
@@ -444,17 +321,6 @@ const CheckoutPage = () => {
     if (!createdOrder) {
       alert("Order not found. Please try again.");
       return;
-    }
-
-    // If order has changed, update it first
-    if (hasOrderChanged) {
-      try {
-        await updateExistingOrder();
-      } catch (error) {
-        console.error("Failed to update order before payment:", error);
-        alert("Please update your order first before confirming payment.");
-        return;
-      }
     }
 
     // Enhanced UPI Transaction ID validation
@@ -473,13 +339,14 @@ const CheckoutPage = () => {
     );
 
     if (!isValidFormat) {
-      alert("Invalid UPI transaction ID format. Please enter a valid 12-digit UPI transaction ID.");
+      alert(
+        "Invalid UPI transaction ID format. Please enter a valid 12-digit UPI transaction ID."
+      );
       return;
     }
 
     setIsConfirmingPayment(true);
     try {
-      const upiId = "9589773525@ptsbi";
       const response = await api.post(
         `/api/orders/${createdOrder._id}/confirm-payment`,
         {
@@ -490,7 +357,7 @@ const CheckoutPage = () => {
       );
 
       if (response.data.success) {
-        // Navigate to PaymentVerificationPage
+        // Navigate to PaymentVerificationPage (this should work now)
         navigate(`/payment-verification/${response.data.orderNumber}`, {
           state: {
             order: response.data.order,
@@ -502,7 +369,10 @@ const CheckoutPage = () => {
       console.error("Error confirming payment:", error);
 
       if (error.response?.status === 400) {
-        alert(error.response.data.message || "Invalid payment details. Please check and try again.");
+        alert(
+          error.response.data.message ||
+            "Invalid payment details. Please check and try again."
+        );
       } else if (error.response?.status === 403) {
         alert("Access denied. This order doesn't belong to you.");
       } else if (error.response?.status === 404) {
@@ -516,7 +386,6 @@ const CheckoutPage = () => {
       setIsConfirmingPayment(false);
     }
   };
-
   // Delete functionality
   const handleDeleteClick = (item) => {
     setItemToDelete(item);
@@ -528,46 +397,16 @@ const CheckoutPage = () => {
 
     setIsDeleting(true);
     try {
-      // Remove from local cart instead of global cart if order is created
-      if (createdOrder && localCart) {
-        const updatedItems = localCart.items.filter(
-          (item) => (item.id || item._id) !== (itemToDelete.id || itemToDelete._id)
-        );
-        
-        if (updatedItems.length === 0) {
-          navigate("/");
-          return;
-        }
-        
-        // Recalculate totals
-        let subtotal = 0;
-        let savings = 0;
-        
-        updatedItems.forEach((item) => {
-          subtotal += item.price * item.quantity;
-        });
-        
-        const total = Math.max(0, subtotal - savings);
-        
-        setLocalCart({
-          items: updatedItems,
-          total,
-          subtotal,
-          savings,
-        });
-      } else {
-        await removeFromCart(itemToDelete.id || itemToDelete._id);
-        
-        setTimeout(() => {
-          const updatedCart = calculateCartData();
-          if (!product && (!updatedCart || updatedCart.itemCount === 0)) {
-            navigate("/");
-          }
-        }, 500);
-      }
-      
+      await removeFromCart(itemToDelete.id || itemToDelete._id);
       setShowDeleteModal(false);
       setItemToDelete(null);
+
+      setTimeout(() => {
+        const updatedCart = calculateCartData();
+        if (!product && (!updatedCart || updatedCart.itemCount === 0)) {
+          navigate("/");
+        }
+      }, 500);
     } catch (error) {
       console.error("Error deleting item:", error);
       alert("Failed to remove item. Please try again.");
@@ -590,34 +429,7 @@ const CheckoutPage = () => {
       }
     } else {
       try {
-        // Update local cart if order is created
-        if (createdOrder && localCart) {
-          const updatedItems = localCart.items.map((item) => {
-            if ((item.id || item._id) === itemId) {
-              return { ...item, quantity: newQuantity };
-            }
-            return item;
-          });
-          
-          // Recalculate totals
-          let subtotal = 0;
-          let savings = 0;
-          
-          updatedItems.forEach((item) => {
-            subtotal += item.price * item.quantity;
-          });
-          
-          const total = Math.max(0, subtotal - savings);
-          
-          setLocalCart({
-            items: updatedItems,
-            total,
-            subtotal,
-            savings,
-          });
-        } else {
-          await updateCartItemQuantity(itemId, newQuantity);
-        }
+        await updateCartItemQuantity(itemId, newQuantity);
       } catch (error) {
         console.error("Error updating quantity:", error);
         alert("Failed to update quantity. Please try again.");
@@ -632,7 +444,6 @@ const CheckoutPage = () => {
         state: {
           cart: staticCart || cart,
           editMode: true,
-          existingOrder: createdOrder, // Pass the existing order
         },
       });
     } else if (product) {
@@ -640,7 +451,6 @@ const CheckoutPage = () => {
         state: {
           product: product,
           editMode: true,
-          existingOrder: createdOrder, // Pass the existing order
         },
       });
     }
@@ -687,15 +497,6 @@ const CheckoutPage = () => {
               <h3 className="text-xl font-bold text-gray-900 mb-4">
                 Confirm Payment
               </h3>
-
-              {hasOrderChanged && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <AlertCircle className="w-4 h-4 inline mr-1" />
-                    Your order has been modified. Please update your order before confirming payment.
-                  </p>
-                </div>
-              )}
 
               <UPITransactionInput
                 transactionId={transactionId}
@@ -798,18 +599,6 @@ const CheckoutPage = () => {
             </div>
           )}
 
-          {/* Order Update Status */}
-          {isUpdatingOrder && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-3"></div>
-                <span className="text-blue-600 font-medium">
-                  Updating your order...
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* Order Created Confirmation */}
           {createdOrder && (
             <div className="mt-6 p-4 bg-white border border-gray-200 rounded-xl">
@@ -820,30 +609,12 @@ const CheckoutPage = () => {
                     <h3 className="font-semibold text-orange-600">
                       Order Created Successfully
                     </h3>
-                    <p className="text-sm text-orange-600">
+                    <p className="text-sm text-divine-orange">
                       Order #{createdOrder.orderNumber} • Total: ₹
                       {createdOrder.total.toFixed(2)}
                     </p>
                   </div>
                 </div>
-                
-                {/* Order Changed Indicator and Update Button */}
-                {hasOrderChanged && (
-                  <div className="flex items-center space-x-2">
-                    <div className="text-yellow-600 text-sm">
-                      <AlertCircle className="w-4 h-4 inline mr-1" />
-                      Modified
-                    </div>
-                    <button
-                      onClick={updateExistingOrder}
-                      disabled={isUpdatingOrder}
-                      className="flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-1 ${isUpdatingOrder ? 'animate-spin' : ''}`} />
-                      {isUpdatingOrder ? 'Updating...' : 'Update Order'}
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -890,7 +661,7 @@ const CheckoutPage = () => {
                     <p
                       className={`text-sm ${
                         savedToDb
-                          ? "text-orange-600"
+                          ? "text-divine-orange"
                           : fallback
                           ? "text-yellow-600"
                           : "text-orange-600"
@@ -936,10 +707,10 @@ const CheckoutPage = () => {
               </div>
               <div className="w-12 h-0.5 bg-gray-300"></div>
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                <div className="w-8 h-8 bg-[#FF6B35] text-white rounded-full flex items-center justify-center text-sm font-medium">
                   2
                 </div>
-                <span className="ml-2 text-orange-600 font-medium">
+                <span className="ml-2 text-divine-orange font-medium">
                   Payment
                 </span>
               </div>
@@ -955,12 +726,6 @@ const CheckoutPage = () => {
               <h2 className="text-xl font-semibold text-gray-800">
                 Order Summary
               </h2>
-              {hasOrderChanged && (
-                <div className="ml-auto flex items-center text-yellow-600 text-sm">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  Modified
-                </div>
-              )}
             </div>
 
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -1014,8 +779,8 @@ const CheckoutPage = () => {
                               {(item.price * item.quantity).toFixed(2)}
                             </p>
 
-                            {/* Quantity Controls - Always show for cart items */}
-                            {!cart.isFromStatic && (
+                            {/* Quantity Controls - Only for live cart */}
+                            {!cart.isFromStatic && !createdOrder && (
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() =>
@@ -1025,7 +790,6 @@ const CheckoutPage = () => {
                                     )
                                   }
                                   className="p-1.5 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
-                                  disabled={isUpdatingOrder}
                                 >
                                   <Minus size={12} />
                                 </button>
@@ -1040,7 +804,6 @@ const CheckoutPage = () => {
                                     )
                                   }
                                   className="p-1.5 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
-                                  disabled={isUpdatingOrder}
                                 >
                                   <Plus size={12} />
                                 </button>
@@ -1049,13 +812,12 @@ const CheckoutPage = () => {
                           </div>
                         </div>
 
-                        {/* Delete Button - Always show for cart items */}
-                        {!cart.isFromStatic && (
+                        {/* Delete Button - Only show if order not created yet */}
+                        {!cart.isFromStatic && !createdOrder && (
                           <button
                             onClick={() => handleDeleteClick(item)}
                             className="absolute top-2 right-2 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-all duration-200 opacity-70 hover:opacity-100"
                             title="Remove item"
-                            disabled={isUpdatingOrder}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1082,27 +844,10 @@ const CheckoutPage = () => {
 
               <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
                 <span className="text-gray-700 font-semibold">Total</span>
-                <span className="text-2xl font-bold text-orange-600">
+                <span className="text-2xl font-bold text-divine-orange">
                   ₹{totalPrice.toFixed(2)}
                 </span>
               </div>
-              
-              {/* Show update button in order summary if changes detected */}
-              {hasOrderChanged && !cart.isFromStatic && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={updateExistingOrder}
-                    disabled={isUpdatingOrder}
-                    className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isUpdatingOrder ? 'animate-spin' : ''}`} />
-                    {isUpdatingOrder ? 'Updating Order...' : 'Update Order'}
-                  </button>
-                  <p className="text-xs text-gray-500 mt-1 text-center">
-                    Update your order to reflect the latest changes
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1114,21 +859,6 @@ const CheckoutPage = () => {
                 Payment Options
               </h2>
             </div>
-
-            {/* Warning if order has changed */}
-            {hasOrderChanged && (
-              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
-                  <div>
-                    <h4 className="font-medium text-yellow-800">Order Modified</h4>
-                    <p className="text-sm text-yellow-700">
-                      Please update your order before making payment to ensure the correct amount.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-6">
               {/* QR Code */}
@@ -1169,7 +899,7 @@ const CheckoutPage = () => {
               <a
                 href={upiLink}
                 onClick={handlePaymentMade}
-                className="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
+                className="block w-full bg-green-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
               >
                 Pay ₹{totalPrice.toFixed(2)} Now
               </a>
@@ -1178,10 +908,9 @@ const CheckoutPage = () => {
               {createdOrder && (
                 <button
                   onClick={handlePaymentMade}
-                  className="w-full bg-orange-600 hover:bg-orange-700 hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-all"
-                  disabled={hasOrderChanged}
+                  className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
                 >
-                  {hasOrderChanged ? 'Update Order First' : 'I Have Made the Payment'}
+                  I Have Made the Payment
                 </button>
               )}
 
@@ -1200,7 +929,7 @@ const CheckoutPage = () => {
           </h3>
           <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
                 1
               </div>
               <p>
@@ -1210,13 +939,13 @@ const CheckoutPage = () => {
               </p>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
                 2
               </div>
               <p>Complete payment with your UPI PIN</p>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
                 3
               </div>
               <p>Click 'I Have Made the Payment' and enter transaction ID</p>
