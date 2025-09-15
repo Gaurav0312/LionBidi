@@ -77,6 +77,7 @@ const MobileMenu = ({
         icon: Package,
         desc: "Browse our catalog",
       },
+      { path: "/orders", label: "Orders", icon: ShoppingCart },
       { path: "/about", label: "About", icon: Info, desc: "Learn our story" },
       { path: "/contact", label: "Contact", icon: Phone, desc: "Get in touch" },
     ],
@@ -200,7 +201,7 @@ const MobileMenu = ({
               <img
                 src="/lion.png"
                 alt="Lion Bidi"
-                className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-105"
+                className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
               />
             </div>
             <h2 className="text-3xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-[#FF6B35]">
@@ -428,7 +429,7 @@ const MobileMenu = ({
             <img
               src="/lion.png"
               alt="Lion Bidi"
-              className="h-18 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-105"
+              className="h-18 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
             />
           </div>
           <h3 className="font-bold text-gray-900 mb-1">Join Lion Bidi</h3>
