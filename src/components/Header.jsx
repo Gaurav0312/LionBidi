@@ -24,6 +24,7 @@ import api from "../utils/api";
 const Header = () => {
   const navigate = useNavigate();
 
+  // Get all context values and force re-render when user changes
   const {
     cartItems = [],
     wishlist = [],
@@ -32,6 +33,9 @@ const Header = () => {
     getCartItemsCount,
     openAuthModal,
   } = useAppContext();
+
+  // Force component to re-render when user changes
+  const [userRenderKey, setUserRenderKey] = useState(0);
 
   const cartCount = getCartItemsCount ? getCartItemsCount() : cartItems.length;
 
@@ -47,6 +51,16 @@ const Header = () => {
 
   const searchRef = useRef(null);
   const userMenuRef = useRef(null);
+
+  // CRITICAL: Force re-render when user changes
+  useEffect(() => {
+    console.log("Header - User state changed:", user);
+    setUserRenderKey(prev => prev + 1);
+    
+    // Close any open menus when user changes
+    setIsUserMenuOpen(false);
+    setIsMenuOpen(false);
+  }, [user]);
 
   // Fixed useEffect for handling clicks outside
   useEffect(() => {
@@ -91,7 +105,6 @@ const Header = () => {
         }
       } catch (error) {
         console.error("Error fetching user address:", error);
-        // Don't show error to user as this is optional
       }
     };
 
@@ -127,6 +140,9 @@ const Header = () => {
     setIsUserMenuOpen(false);
     handleNavigate("/");
   };
+
+  // Debug: Log current user state
+  console.log("Header render - User:", user, "Key:", userRenderKey);
 
   return (
     <>
@@ -202,6 +218,7 @@ const Header = () => {
 
       {/* MAIN HEADER */}
       <header
+        key={`header-${userRenderKey}`} // Force re-render with key
         className={`sticky top-0 z-50 transition-all duration-300 ${
           isScrolled
             ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-orange-100"
@@ -285,10 +302,10 @@ const Header = () => {
                 </button>
               ))}
 
-              {/* User Section */}
+              {/* User Section - FIXED */}
               {user ? (
                 <div className="flex items-center space-x-1 xl:space-x-2 ml-2 xl:ml-4 border-l border-orange-200 pl-2 xl:pl-4">
-                  {/* FIXED User Menu */}
+                  {/* User Menu */}
                   <div className="relative" ref={userMenuRef}>
                     <button
                       onClick={(e) => {
@@ -312,7 +329,7 @@ const Header = () => {
                       />
                     </button>
 
-                    {/* FIXED User Dropdown - Now positioned correctly */}
+                    {/* User Dropdown */}
                     {isUserMenuOpen && (
                       <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-orange-200 py-2 z-[100] animate-in slide-in-from-top-2 duration-300">
 
@@ -580,6 +597,7 @@ const Header = () => {
 
       {/* MOBILE MENU COMPONENT */}
       <MobileMenu
+        key={`mobile-menu-${userRenderKey}`} // Force re-render
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         user={user}
