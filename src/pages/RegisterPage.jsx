@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../utils/api";
 
 const RegisterPage = () => {
-  const { login, } = useAppContext();
+  const { login } = useAppContext();
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -186,84 +186,88 @@ const RegisterPage = () => {
   };
 
   const handleSendEmailOtp = async () => {
-  setError("");
-  setLoading(true);
-  
-  try {
-    console.log("Attempting to send OTP to:", formData.email);
-    console.log("API endpoint:", `${BASE_URL}/api/auth/send-registration-otp`);
-    
-    // First check availability
-    const checkResponse = await fetch(
-      `${BASE_URL}/api/auth/check-availability`,
-      {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
-          phone: formData.phone,
-        }),
-      }
-    );
+    setError("");
+    setLoading(true);
 
-    if (!checkResponse.ok) {
-      const checkData = await checkResponse.json();
-      setError(checkData.message || "Email or phone number already exists");
+    try {
+      console.log("Attempting to send OTP to:", formData.email);
+      console.log(
+        "API endpoint:",
+        `${BASE_URL}/api/auth/send-registration-otp`
+      );
+
+      // First check availability
+      const checkResponse = await fetch(
+        `${BASE_URL}/api/auth/check-availability`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email.toLowerCase().trim(),
+            phone: formData.phone,
+          }),
+        }
+      );
+
+      if (!checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        setError(checkData.message || "Email or phone number already exists");
+        setLoading(false);
+        return;
+      }
+
+      // Send Email OTP
+      const emailOtpResponse = await fetch(
+        `${BASE_URL}/api/auth/send-registration-otp`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email.toLowerCase().trim(),
+            name: formData.name.trim(),
+          }),
+        }
+      );
+
+      const emailOtpData = await emailOtpResponse.json();
+
+      if (emailOtpResponse.ok) {
+        console.log("OTP sent successfully:", emailOtpData);
+        setStep(3);
+        setEmailOtpSent(true);
+        alert("Verification code sent to your email");
+
+        // Start countdown
+        setEmailResendCooldown(30);
+        const timer = setInterval(() => {
+          setEmailResendCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        console.error("OTP send failed:", emailOtpData);
+        setError(
+          emailOtpData.message || "Failed to send email verification code"
+        );
+      }
+    } catch (err) {
+      console.error("Email OTP error:", err);
+      setError(`Network error: ${err.message}`);
+      setEmailOtpSent(false);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Send Email OTP
-    const emailOtpResponse = await fetch(
-      `${BASE_URL}/api/auth/send-registration-otp`,
-      {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
-          name: formData.name.trim(),
-        }),
-      }
-    );
-
-    const emailOtpData = await emailOtpResponse.json();
-    
-    if (emailOtpResponse.ok) {
-      console.log("OTP sent successfully:", emailOtpData);
-      setStep(3);
-      setEmailOtpSent(true);
-      alert("Verification code sent to your email");
-      
-      // Start countdown
-      setEmailResendCooldown(30);
-      const timer = setInterval(() => {
-        setEmailResendCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      console.error("OTP send failed:", emailOtpData);
-      setError(emailOtpData.message || "Failed to send email verification code");
-    }
-  } catch (err) {
-    console.error("Email OTP error:", err);
-    setError(`Network error: ${err.message}`);
-    setEmailOtpSent(false);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const resendEmailOtp = async () => {
     if (emailResendCooldown > 0) return;
@@ -431,7 +435,7 @@ const RegisterPage = () => {
                     num < step
                       ? "bg-green-500"
                       : num === step
-                      ? "bg-orange-500"
+                      ? "bg-[#FF6B35]"
                       : "bg-gray-300"
                   }`}
                 />
@@ -457,7 +461,7 @@ const RegisterPage = () => {
                 <h1 className="text-3xl sm:text-xl font-extrabold bg-[#FF6B35] bg-clip-text text-transparent">
                   LION BIDI
                 </h1>
-                {/* <p className="text-xs text-orange-500 font-medium tracking-wide">
+                {/* <p className="text-xs text-divine-orange font-medium tracking-wide">
                   Special Bidi
                 </p> */}
               </div>
@@ -496,7 +500,7 @@ const RegisterPage = () => {
                     num < step
                       ? "bg-green-500 text-white"
                       : num === step
-                      ? "bg-orange-500 text-white"
+                      ? "bg-[#FF6B35] text-white"
                       : "bg-gray-200 text-gray-600"
                   }`}
                 >
@@ -826,14 +830,16 @@ const RegisterPage = () => {
                         I agree to the{" "}
                         <button
                           type="button"
-                          className="text-divine-orange underline hover:text-orange-500 font-semibold"
+                          className="text-divine-orange underline hover:text-divine-orange font-semibold"
+                          onClick={() => navigate("/terms")}
                         >
                           Terms of Service
                         </button>{" "}
                         and{" "}
                         <button
                           type="button"
-                          className="text-divine-orange underline hover:text-orange-500 font-semibold"
+                          className="text-divine-orange underline hover:text-divine-orange font-semibold"
+                          onClick={() => navigate("/privacy-policy")}
                         >
                           Privacy Policy
                         </button>{" "}
@@ -969,22 +975,6 @@ const RegisterPage = () => {
                       {formData.email}
                     </p>
                   </div>
-
-                  {/* ------- Loading or Sent Message ------- */}
-                  {/* <div className="text-center mb-4">
-                    {!emailOtpSent ? (
-                      <div>
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
-                        <p className="text-gray-600">
-                          Sending verification code...
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-green-600">
-                        ✓ Verification code sent to {formData.email}
-                      </p>
-                    )}
-                  </div> */}
 
                   {/* ------- OTP Input and Actions only when Sent ------- */}
                   {emailOtpSent && (
