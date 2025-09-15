@@ -140,7 +140,7 @@ const Profile = () => {
           <div className="mt-6">
             <button
               onClick={handleSaveProfile}
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              className="px-6 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600"
             >
               <Save size={16} className="inline mr-2" />
               Save Changes
@@ -155,7 +155,7 @@ const Profile = () => {
           <h2 className="text-xl font-semibold text-gray-800">Saved Addresses</h2>
           <button
             onClick={() => setShowAddressForm(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="flex items-center space-x-2 px-4 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600"
           >
             <Plus size={16} />
             <span>Add Address</span>
@@ -199,7 +199,7 @@ const Profile = () => {
             </div>
             <input type="text" placeholder="Phone" value={newAddress.phone} onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
             <div className="flex space-x-3">
-              <button onClick={handleAddAddress} className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">Save Address</button>
+              <button onClick={handleAddAddress} className="px-6 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600">Save Address</button>
               <button onClick={() => setShowAddressForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
             </div>
           </div>
