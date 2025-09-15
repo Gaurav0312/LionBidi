@@ -223,7 +223,7 @@ const Header = () => {
                 <img
                   src="/lion.png"
                   alt="Lion Bidi"
-                  className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-105"
+                  className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
                 />
               </div>
               <div className="ml-2 lg:ml-3">
@@ -254,7 +254,7 @@ const Header = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex items-center gap-2 bg-[#FF6B35] text-white font-bold px-4 xl:px-6 py-3 rounded-xl shadow hover:from-orange-600 hover:to-red-600 transition-all transform hover:scale-105 disabled:opacity-50"
+                    className="flex items-center gap-2 bg-[#FF6B35] text-white font-bold px-4 xl:px-6 py-3 rounded-xl shadow hover:from-orange-600 hover:to-red-600 transition-all transform hover:scale-[1.02] disabled:opacity-50"
                   >
                     {isLoading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
@@ -472,7 +472,7 @@ const Header = () => {
                   </button>
                   <button
                     onClick={() => handleNavigate("/login")}
-                    className="flex items-center gap-1 bg-[#FF6B35] text-white px-3 py-2 rounded-lg shadow-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-105 font-bold whitespace-nowrap"
+                    className="flex items-center gap-1 bg-[#FF6B35] text-white px-3 py-2 rounded-lg shadow-lg hover:from-orange-600 hover:to-red-600 transition-all duration-300 transform hover:scale-[1.02] font-bold whitespace-nowrap"
                   >
                     <User size={16} />
                     <span className="text-sm">Login</span>
