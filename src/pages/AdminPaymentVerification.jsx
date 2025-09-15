@@ -27,38 +27,39 @@ const AdminPaymentVerification = () => {
   }, []);
 
   const fetchPendingVerifications = async () => {
-    try {
-      console.log('🔄 Fetching pending verifications...');
-      
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${BASE_URL}/api/orders/admin/pending-verifications`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('📡 Response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  try {
+    console.log('🔄 Fetching pending verifications...');
+    
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${BASE_URL}/api/orders/admin/pending-verifications`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-      
-      const data = await response.json();
-      console.log('📊 Pending orders data:', data);
-      
-      if (data.success) {
-        setPendingOrders(data.orders);
-        console.log(`✅ Found ${data.orders.length} pending orders`);
-      } else {
-        console.error('❌ API returned error:', data.message);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching pending verifications:', error);
-    } finally {
-      setLoading(false);
+    });
+    
+    console.log('📡 Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    
+    const data = await response.json();
+    console.log('📊 Raw API response:', data); // ✅ Add debugging
+    
+    if (data.success) {
+      console.log('📊 Orders data:', data.orders); // ✅ Add debugging
+      setPendingOrders(data.orders || []);
+      console.log(`✅ Found ${data.orders?.length || 0} pending orders`);
+    } else {
+      console.error('❌ API returned error:', data.message);
+    }
+  } catch (error) {
+    console.error('❌ Error fetching pending verifications:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const verifyPayment = async (orderId, verified) => {
     try {
