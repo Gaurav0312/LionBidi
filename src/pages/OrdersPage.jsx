@@ -423,7 +423,7 @@ const OrdersPage = () => {
                 onClick={() => setShowOrderDetails(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
-                <X size={20} sm:size={24} />
+                <X size={24} />
               </button>
             </div>
           </div>
