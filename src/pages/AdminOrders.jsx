@@ -36,31 +36,28 @@ const AdminOrders = () => {
 
       const data = await response.json();
       if (data.success) {
-      setOrders(data.orders);
-    } else {
-      setOrders([]); // Or show error UI
-    }
+        setOrders(data.orders);
+      } else {
+        setOrders([]); // Or show error UI
+      }
     } catch (error) {
-    console.error('Error fetching orders:', error);
-    setOrders([]);
-  } finally {
-    setLoading(false);
-  }
+      console.error("Error fetching orders:", error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const response = await fetch(
-        `/api/orders/${orderId}/admin/update-status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
+      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
       const data = await response.json();
       if (data.success) {
