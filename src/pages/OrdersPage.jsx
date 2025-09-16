@@ -74,7 +74,7 @@ const OrdersPage = () => {
   // Check if order can be deleted
   const canDeleteOrder = (order) => {
     // Allow deletion for pending, payment_failed, or cancelled orders
-    const deletableStatuses = ['pending', 'payment_failed', 'cancelled'];
+    const deletableStatuses = ["pending", "payment_failed", "cancelled"];
     return deletableStatuses.includes(order.status);
   };
 
@@ -83,20 +83,22 @@ const OrdersPage = () => {
     try {
       setDeleteLoading(true);
       const response = await api.delete(`/api/orders/${orderId}`);
-      
+
       if (response.data.success) {
         // Remove the deleted order from the local state
-        setOrders(prevOrders => prevOrders.filter(order => order._id !== orderId));
-        
+        setOrders((prevOrders) =>
+          prevOrders.filter((order) => order._id !== orderId)
+        );
+
         // Update pagination total
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
-          total: prev.total - 1
+          total: prev.total - 1,
         }));
 
         // Show success message (you can implement a toast notification here)
-        alert('Order deleted successfully');
-        
+        alert("Order deleted successfully");
+
         // Close confirmation modal
         setShowDeleteConfirm(false);
         setOrderToDelete(null);
@@ -366,14 +368,14 @@ const OrdersPage = () => {
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
               <Trash2 className="h-6 w-6 text-red-600" />
             </div>
-            
+
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Delete Order
             </h3>
-            
+
             <p className="text-sm text-gray-500 mb-6">
-              Are you sure you want to delete order #{orderToDelete.orderNumber}? 
-              This action cannot be undone.
+              Are you sure you want to delete order #{orderToDelete.orderNumber}
+              ? This action cannot be undone.
             </p>
 
             <div className="flex gap-3">
@@ -387,7 +389,7 @@ const OrdersPage = () => {
               >
                 Cancel
               </button>
-              
+
               <button
                 onClick={() => handleDeleteOrder(orderToDelete._id)}
                 disabled={deleteLoading}
@@ -399,7 +401,7 @@ const OrdersPage = () => {
                     Deleting...
                   </div>
                 ) : (
-                  'Delete Order'
+                  "Delete Order"
                 )}
               </button>
             </div>
@@ -627,7 +629,7 @@ const OrdersPage = () => {
             Back
           </button>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">My Orders</h1>
               <p className="text-gray-600 mt-1">Track and manage your orders</p>
@@ -708,7 +710,7 @@ const OrdersPage = () => {
 
       {/* Order Details Modal */}
       <OrderDetailsModal />
-      
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal />
     </div>
