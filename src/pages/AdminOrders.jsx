@@ -1,5 +1,5 @@
 // pages/AdminOrders.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -11,14 +11,14 @@ import {
   Clock,
   Download,
   Edit,
-  MoreHorizontal
-} from 'lucide-react';
+  MoreHorizontal,
+} from "lucide-react";
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
 
@@ -28,116 +28,70 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/api/orders/admin/all', {
+      const response = await fetch("/api/admin/orders", {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+        },
       });
-      
+
       const data = await response.json();
       if (data.success) {
-        setOrders(data.orders);
-      }
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      // Mock data for development
-      setOrders([
-        {
-          _id: '1',
-          orderNumber: 'LB24001234',
-          user: { name: 'John Doe', email: 'john@example.com' },
-          total: 2599.99,
-          status: 'pending_payment',
-          orderDate: new Date('2024-01-15'),
-          items: [
-            { name: 'Product 1', quantity: 2, price: 1299.99 }
-          ],
-          shippingAddress: {
-            name: 'John Doe',
-            phone: '+91-9876543210',
-            city: 'Mumbai',
-            state: 'Maharashtra'
-          }
-        },
-        {
-          _id: '2',
-          orderNumber: 'LB24001235',
-          user: { name: 'Jane Smith', email: 'jane@example.com' },
-          total: 1899.50,
-          status: 'confirmed',
-          orderDate: new Date('2024-01-14'),
-          items: [
-            { name: 'Product 2', quantity: 1, price: 1899.50 }
-          ],
-          shippingAddress: {
-            name: 'Jane Smith',
-            phone: '+91-9876543211',
-            city: 'Delhi',
-            state: 'Delhi'
-          }
-        },
-        {
-          _id: '3',
-          orderNumber: 'LB24001236',
-          user: { name: 'Mike Johnson', email: 'mike@example.com' },
-          total: 3299.99,
-          status: 'shipped',
-          orderDate: new Date('2024-01-13'),
-          items: [
-            { name: 'Product 3', quantity: 1, price: 3299.99 }
-          ],
-          shippingAddress: {
-            name: 'Mike Johnson',
-            phone: '+91-9876543212',
-            city: 'Bangalore',
-            state: 'Karnataka'
-          }
-        }
-      ]);
-    } finally {
-      setLoading(false);
+      setOrders(data.orders);
+    } else {
+      setOrders([]); // Or show error UI
     }
+    } catch (error) {
+    console.error('Error fetching orders:', error);
+    setOrders([]);
+  } finally {
+    setLoading(false);
+  }
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/admin/update-status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
+      const response = await fetch(
+        `/api/orders/${orderId}/admin/update-status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
 
       const data = await response.json();
       if (data.success) {
-        setOrders(orders.map(order => 
-          order._id === orderId ? { ...order, status: newStatus } : order
-        ));
+        setOrders(
+          orders.map((order) =>
+            order._id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
         setShowStatusModal(false);
         setSelectedOrder(null);
-        alert('Order status updated successfully!');
+        alert("Order status updated successfully!");
       } else {
-        alert('Failed to update order status');
+        alert("Failed to update order status");
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
-      alert('Error occurred while updating order status');
+      console.error("Error updating order status:", error);
+      alert("Error occurred while updating order status");
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending_payment':
+      case "pending_payment":
         return <Clock className="w-4 h-4" />;
-      case 'confirmed':
+      case "confirmed":
         return <CheckCircle className="w-4 h-4" />;
-      case 'shipped':
+      case "shipped":
         return <Truck className="w-4 h-4" />;
-      case 'delivered':
+      case "delivered":
         return <Package className="w-4 h-4" />;
-      case 'cancelled':
+      case "cancelled":
         return <XCircle className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
@@ -146,29 +100,30 @@ const AdminOrders = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending_payment':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "pending_payment":
+        return "bg-yellow-100 text-yellow-800";
+      case "confirmed":
+        return "bg-blue-100 text-blue-800";
+      case "shipped":
+        return "bg-purple-100 text-purple-800";
+      case "delivered":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
+
+    const matchesStatus =
+      statusFilter === "all" || order.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -185,7 +140,9 @@ const AdminOrders = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Orders Management
+          </h1>
           <p className="text-gray-600">{orders.length} total orders</p>
         </div>
         <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
@@ -208,7 +165,7 @@ const AdminOrders = () => {
             />
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-400" />
           <select
@@ -231,8 +188,12 @@ const AdminOrders = () => {
         {filteredOrders.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Orders Found</h3>
-            <p className="text-gray-500">No orders match your current filters.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Orders Found
+            </h3>
+            <p className="text-gray-500">
+              No orders match your current filters.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -263,22 +224,36 @@ const AdminOrders = () => {
                 {filteredOrders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{order.orderNumber}</div>
+                      <div className="font-medium text-gray-900">
+                        {order.orderNumber}
+                      </div>
                       <div className="text-sm text-gray-500">
                         {order.items?.length || 0} item(s)
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{order.user?.name}</div>
-                      <div className="text-sm text-gray-500">{order.user?.email}</div>
+                      <div className="font-medium text-gray-900">
+                        {order.user?.name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {order.user?.email}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-bold text-gray-900">₹{order.total?.toFixed(2)}</div>
+                      <div className="font-bold text-gray-900">
+                        ₹{order.total?.toFixed(2)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                          order.status
+                        )}`}
+                      >
                         {getStatusIcon(order.status)}
-                        <span className="ml-1 capitalize">{order.status?.replace('_', ' ')}</span>
+                        <span className="ml-1 capitalize">
+                          {order.status?.replace("_", " ")}
+                        </span>
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -334,36 +309,54 @@ const AdminOrders = () => {
               {/* Order Info */}
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Order Information</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    Order Information
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Order Number:</span>
-                      <span className="font-medium">{selectedOrder.orderNumber}</span>
+                      <span className="font-medium">
+                        {selectedOrder.orderNumber}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Amount:</span>
-                      <span className="font-bold text-lg">₹{selectedOrder.total?.toFixed(2)}</span>
+                      <span className="font-bold text-lg">
+                        ₹{selectedOrder.total?.toFixed(2)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                          selectedOrder.status
+                        )}`}
+                      >
                         {getStatusIcon(selectedOrder.status)}
-                        <span className="ml-1 capitalize">{selectedOrder.status?.replace('_', ' ')}</span>
+                        <span className="ml-1 capitalize">
+                          {selectedOrder.status?.replace("_", " ")}
+                        </span>
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Order Date:</span>
-                      <span>{new Date(selectedOrder.orderDate).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(selectedOrder.orderDate).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Customer Information</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    Customer Information
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{selectedOrder.user?.name}</span>
+                      <span className="font-medium">
+                        {selectedOrder.user?.name}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Email:</span>
@@ -375,7 +368,10 @@ const AdminOrders = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">City:</span>
-                      <span>{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state}</span>
+                      <span>
+                        {selectedOrder.shippingAddress?.city},{" "}
+                        {selectedOrder.shippingAddress?.state}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -383,15 +379,24 @@ const AdminOrders = () => {
 
               {/* Items */}
               <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
+                <h4 className="font-semibold text-gray-900 mb-3">
+                  Order Items
+                </h4>
                 <div className="space-y-2">
                   {selectedOrder.items?.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 p-3 rounded-lg"
+                    >
                       <div>
                         <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                        <p className="text-sm text-gray-600">
+                          Qty: {item.quantity}
+                        </p>
                       </div>
-                      <p className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-semibold">
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -421,20 +426,28 @@ const AdminOrders = () => {
               <p className="text-sm text-gray-600 mb-4">
                 Order: {selectedOrder.orderNumber}
               </p>
-              
+
               <div className="space-y-2 mb-6">
-                {['pending_payment', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                {[
+                  "pending_payment",
+                  "confirmed",
+                  "shipped",
+                  "delivered",
+                  "cancelled",
+                ].map((status) => (
                   <button
                     key={status}
                     onClick={() => updateOrderStatus(selectedOrder._id, status)}
                     className={`w-full flex items-center px-4 py-2 rounded-lg text-left ${
                       selectedOrder.status === status
-                        ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                        : 'hover:bg-gray-50 border border-gray-200'
+                        ? "bg-blue-100 text-blue-700 border border-blue-300"
+                        : "hover:bg-gray-50 border border-gray-200"
                     }`}
                   >
                     {getStatusIcon(status)}
-                    <span className="ml-2 capitalize">{status.replace('_', ' ')}</span>
+                    <span className="ml-2 capitalize">
+                      {status.replace("_", " ")}
+                    </span>
                   </button>
                 ))}
               </div>
