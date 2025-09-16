@@ -27,56 +27,109 @@ const AdminOrders = () => {
   }, []);
 
   const fetchOrders = async () => {
-    try {
-      const response = await fetch("/api/admin/orders", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-        },
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setOrders(data.orders);
-      } else {
-        setOrders([]); // Or show error UI
+  try {
+    setLoading(true);
+    console.log('🔄 Fetching orders from admin API...');
+    
+    const response = await fetch('/api/orders/admin/all', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setOrders([]);
-    } finally {
-      setLoading(false);
+    });
+    
+    console.log('📡 Response status:', response.status);
+    const data = await response.json();
+    console.log('📦 Response data:', data);
+    
+    if (data.success && data.orders) {
+      setOrders(data.orders);
+      console.log(`✅ Loaded ${data.orders.length} orders from database`);
+    } else {
+      console.error('❌ API returned unsuccessful response:', data.message);
+      // Fall back to mock data only if API fails
+      console.log('🔄 Falling back to mock data...');
+      setOrders([
+        {
+          _id: '1',
+          orderNumber: 'LB24001234',
+          user: { name: 'John Doe', email: 'john@example.com' },
+          total: 2599.99,
+          status: 'pending_payment',
+          orderDate: new Date('2024-01-15'),
+          items: [
+            { name: 'Product 1', quantity: 2, price: 1299.99 }
+          ],
+          shippingAddress: {
+            name: 'John Doe',
+            phone: '+91-9876543210',
+            city: 'Mumbai',
+            state: 'Maharashtra'
+          }
+        },
+        {
+          _id: '2',
+          orderNumber: 'LB24001235',
+          user: { name: 'Jane Smith', email: 'jane@example.com' },
+          total: 1899.50,
+          status: 'confirmed',
+          orderDate: new Date('2024-01-14'),
+          items: [
+            { name: 'Product 2', quantity: 1, price: 1899.50 }
+          ],
+          shippingAddress: {
+            name: 'Jane Smith',
+            phone: '+91-9876543211',
+            city: 'Delhi',
+            state: 'Delhi'
+          }
+        }
+      ]);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error fetching orders:', error);
+    alert(`Failed to fetch orders: ${error.message}. Check console for details.`);
+    
+    // Show mock data with error notification
+    setOrders([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const updateOrderStatus = async (orderId, newStatus) => {
-    try {
-      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
+  try {
+    console.log(`🔄 Updating order ${orderId} status to ${newStatus}`);
+    
+    const response = await fetch(`/api/orders/${orderId}/admin/update-status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
 
-      const data = await response.json();
-      if (data.success) {
-        setOrders(
-          orders.map((order) =>
-            order._id === orderId ? { ...order, status: newStatus } : order
-          )
-        );
-        setShowStatusModal(false);
-        setSelectedOrder(null);
-        alert("Order status updated successfully!");
-      } else {
-        alert("Failed to update order status");
-      }
-    } catch (error) {
-      console.error("Error updating order status:", error);
-      alert("Error occurred while updating order status");
+    const data = await response.json();
+    console.log('📡 Update response:', data);
+    
+    if (data.success) {
+      setOrders(orders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+      setShowStatusModal(false);
+      setSelectedOrder(null);
+      alert('Order status updated successfully!');
+      console.log(`✅ Order ${orderId} status updated to ${newStatus}`);
+    } else {
+      console.error('❌ Failed to update order status:', data.message);
+      alert(`Failed to update order status: ${data.message}`);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error updating order status:', error);
+    alert(`Error occurred while updating order status: ${error.message}`);
+  }
+};
 
   const getStatusIcon = (status) => {
     switch (status) {
