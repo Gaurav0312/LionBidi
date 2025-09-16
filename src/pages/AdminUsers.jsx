@@ -26,20 +26,28 @@ const AdminUsers = () => {
   }, []);
 
   const fetchUsers = async () => {
-    try {
-      const response = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setUsers(data.users);
+  try {
+    setLoading(true);
+    console.log('🔄 Fetching users from admin API...');
+    
+    const response = await fetch('/api/admin/users', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      // Mock data for development
+    });
+    
+    console.log('📡 Response status:', response.status);
+    const data = await response.json();
+    console.log('📦 Response data:', data);
+    
+    if (data.success && data.users) {
+      setUsers(data.users);
+      console.log(`✅ Loaded ${data.users.length} users from database`);
+    } else {
+      console.error('❌ API returned unsuccessful response:', data.message);
+      // Fall back to mock data only if API fails
+      console.log('🔄 Falling back to mock data...');
       setUsers([
         {
           _id: '1',
@@ -70,53 +78,51 @@ const AdminUsers = () => {
             city: 'Delhi',
             state: 'Delhi'
           }
-        },
-        {
-          _id: '3',
-          name: 'Mike Johnson',
-          email: 'mike@example.com',
-          phone: '+91-9876543212',
-          isActive: false,
-          createdAt: new Date('2024-01-05'),
-          lastLogin: new Date('2024-01-12'),
-          totalOrders: 1,
-          totalSpent: 3299.99,
-          address: {
-            city: 'Bangalore',
-            state: 'Karnataka'
-          }
         }
       ]);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error fetching users:', error);
+    alert(`Failed to fetch users: ${error.message}. Check console for details.`);
+    
+    // Show mock data with error notification
+    setUsers([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const toggleUserStatus = async (userId, currentStatus) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/toggle-status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: JSON.stringify({ isActive: !currentStatus })
-      });
+  try {
+    console.log(`🔄 Toggling user ${userId} status from ${currentStatus} to ${!currentStatus}`);
+    
+    const response = await fetch(`/api/admin/users/${userId}/toggle-status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+      },
+      body: JSON.stringify({ isActive: !currentStatus })
+    });
 
-      const data = await response.json();
-      if (data.success) {
-        setUsers(users.map(user => 
-          user._id === userId ? { ...user, isActive: !currentStatus } : user
-        ));
-        alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
-      } else {
-        alert('Failed to update user status');
-      }
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      alert('Error occurred while updating user status');
+    const data = await response.json();
+    console.log('📡 Toggle response:', data);
+    
+    if (data.success) {
+      setUsers(users.map(user => 
+        user._id === userId ? { ...user, isActive: !currentStatus } : user
+      ));
+      alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
+      console.log(`✅ User ${userId} status toggled to ${!currentStatus}`);
+    } else {
+      console.error('❌ Failed to update user status:', data.message);
+      alert(`Failed to update user status: ${data.message}`);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error updating user status:', error);
+    alert(`Error occurred while updating user status: ${error.message}`);
+  }
+};
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
