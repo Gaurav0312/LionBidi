@@ -13,6 +13,7 @@ import {
   Edit,
   MoreHorizontal,
 } from "lucide-react";
+import { BASE_URL } from "../utils/api"; // Add this import
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -27,109 +28,95 @@ const AdminOrders = () => {
   }, []);
 
   const fetchOrders = async () => {
-  try {
-    setLoading(true);
-    console.log('🔄 Fetching orders from admin API...');
-    
-    const response = await fetch('/api/orders/admin/all', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log('📡 Response status:', response.status);
-    const data = await response.json();
-    console.log('📦 Response data:', data);
-    
-    if (data.success && data.orders) {
-      setOrders(data.orders);
-      console.log(`✅ Loaded ${data.orders.length} orders from database`);
-    } else {
-      console.error('❌ API returned unsuccessful response:', data.message);
-      // Fall back to mock data only if API fails
-      console.log('🔄 Falling back to mock data...');
-      setOrders([
-        {
-          _id: '1',
-          orderNumber: 'LB24001234',
-          user: { name: 'John Doe', email: 'john@example.com' },
-          total: 2599.99,
-          status: 'pending_payment',
-          orderDate: new Date('2024-01-15'),
-          items: [
-            { name: 'Product 1', quantity: 2, price: 1299.99 }
-          ],
-          shippingAddress: {
-            name: 'John Doe',
-            phone: '+91-9876543210',
-            city: 'Mumbai',
-            state: 'Maharashtra'
-          }
+    try {
+      setLoading(true);
+      console.log("📄 Fetching orders from admin API...");
+
+      const token = localStorage.getItem("adminToken");
+      console.log("🎫 Admin token exists:", !!token);
+
+      const response = await fetch(`${BASE_URL}/api/orders/admin/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        {
-          _id: '2',
-          orderNumber: 'LB24001235',
-          user: { name: 'Jane Smith', email: 'jane@example.com' },
-          total: 1899.50,
-          status: 'confirmed',
-          orderDate: new Date('2024-01-14'),
-          items: [
-            { name: 'Product 2', quantity: 1, price: 1899.50 }
-          ],
-          shippingAddress: {
-            name: 'Jane Smith',
-            phone: '+91-9876543211',
-            city: 'Delhi',
-            state: 'Delhi'
-          }
-        }
-      ]);
+      });
+
+      console.log("📡 Response status:", response.status);
+      console.log("📡 Response headers:", Object.fromEntries(response.headers));
+
+      // Handle non-JSON responses (like HTML error pages)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await response.text();
+        console.error("❌ Non-JSON response received:", textResponse);
+        throw new Error(
+          `Server returned ${response.status}: Expected JSON but got ${contentType}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("📦 Response data:", data);
+
+      if (data.success && data.orders) {
+        setOrders(data.orders);
+        console.log(`✅ Loaded ${data.orders.length} orders from database`);
+      } else {
+        console.error("❌ API returned unsuccessful response:", data.message);
+        // Fall back to empty array instead of mock data
+        setOrders([]);
+        alert(`Failed to fetch orders: ${data.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching orders:", error);
+      alert(
+        `Failed to fetch orders: ${error.message}. Check console for details.`
+      );
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('❌ Error fetching orders:', error);
-    alert(`Failed to fetch orders: ${error.message}. Check console for details.`);
-    
-    // Show mock data with error notification
-    setOrders([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const updateOrderStatus = async (orderId, newStatus) => {
-  try {
-    console.log(`🔄 Updating order ${orderId} status to ${newStatus}`);
-    
-    const response = await fetch(`/api/orders/${orderId}/admin/update-status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-      },
-      body: JSON.stringify({ status: newStatus })
-    });
+    try {
+      console.log(`📄 Updating order ${orderId} status to ${newStatus}`);
 
-    const data = await response.json();
-    console.log('📡 Update response:', data);
-    
-    if (data.success) {
-      setOrders(orders.map(order => 
-        order._id === orderId ? { ...order, status: newStatus } : order
-      ));
-      setShowStatusModal(false);
-      setSelectedOrder(null);
-      alert('Order status updated successfully!');
-      console.log(`✅ Order ${orderId} status updated to ${newStatus}`);
-    } else {
-      console.error('❌ Failed to update order status:', data.message);
-      alert(`Failed to update order status: ${data.message}`);
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `${BASE_URL}/api/orders/${orderId}/admin/update-status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      const data = await response.json();
+      console.log("📡 Update response:", data);
+
+      if (data.success) {
+        setOrders(
+          orders.map((order) =>
+            order._id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+        setShowStatusModal(false);
+        setSelectedOrder(null);
+        alert("Order status updated successfully!");
+        console.log(`✅ Order ${orderId} status updated to ${newStatus}`);
+      } else {
+        console.error("❌ Failed to update order status:", data.message);
+        alert(`Failed to update order status: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("❌ Error updating order status:", error);
+      alert(`Error occurred while updating order status: ${error.message}`);
     }
-  } catch (error) {
-    console.error('❌ Error updating order status:', error);
-    alert(`Error occurred while updating order status: ${error.message}`);
-  }
-};
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -167,7 +154,7 @@ const AdminOrders = () => {
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -283,10 +270,10 @@ const AdminOrders = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">
-                        {order.user?.name}
+                        {order.user?.name || "N/A"}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {order.user?.email}
+                        {order.user?.email || "N/A"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
