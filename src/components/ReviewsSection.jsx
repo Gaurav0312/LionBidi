@@ -1,63 +1,77 @@
-// components/ReviewsSection.jsx
+// components/ReviewsSection.jsx - FIXED VERSION
 import React, { useState, useEffect } from 'react';
-import { Star, ThumbsUp, MessageCircle, Camera } from 'lucide-react';
-import ReviewForm from './ReviewForm'; // ✅ FIXED: Removed extra slash
+import { Star, ThumbsUp, MessageCircle } from 'lucide-react';
+import ReviewForm from './ReviewForm';
+import api, { BASE_URL } from '../utils/api'; // Import your API utility
 
 const ReviewsSection = ({ productId, currentUser }) => {
-  const [reviews, setReviews] = useState([]); // ✅ Already initialized as array
+  const [reviews, setReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [ratingDistribution, setRatingDistribution] = useState([]); // ✅ Already initialized as array
+  const [ratingDistribution, setRatingDistribution] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
-  const [error, setError] = useState(null); // ✅ ADDED: Error state
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (productId) { // ✅ ADDED: Check if productId exists
+    if (productId) {
       fetchReviews();
     }
   }, [productId]);
 
   const fetchReviews = async () => {
-    if (!productId) { // ✅ ADDED: Early return if no productId
+    if (!productId) {
       setLoading(false);
       return;
     }
 
     try {
-      setError(null); // ✅ ADDED: Clear previous errors
-      const response = await fetch(`/api/reviews/product/${productId}`);
+      setError(null);
+      setLoading(true);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      console.log(`🔍 Fetching reviews for product: ${productId}`);
+      console.log(`🌐 API URL: ${BASE_URL}/api/reviews/product/${productId}`);
+
+      // Use your API utility instead of direct fetch
+      const response = await api.get(`/api/reviews/product/${productId}`);
       
-      const data = await response.json();
+      console.log('✅ Reviews API Response:', response.data);
       
-      // ✅ ADDED: Validate response data structure
+      const data = response.data;
+      
+      // Validate and set data with proper fallbacks
       setReviews(Array.isArray(data.reviews) ? data.reviews : []);
       setRatingDistribution(Array.isArray(data.ratingDistribution) ? data.ratingDistribution : []);
       setTotalReviews(typeof data.totalReviews === 'number' ? data.totalReviews : 0);
       
-      // Calculate average rating with proper validation
+      // Calculate average rating
       if (Array.isArray(data.ratingDistribution) && data.ratingDistribution.length > 0 && data.totalReviews > 0) {
-        const totalRating = data.ratingDistribution.reduce(
-          (sum, item) => {
-            // ✅ ADDED: Validate item structure
-            if (item && typeof item._id === 'number' && typeof item.count === 'number') {
-              return sum + (item._id * item.count);
-            }
-            return sum;
-          }, 0
-        );
+        const totalRating = data.ratingDistribution.reduce((sum, item) => {
+          if (item && typeof item._id === 'number' && typeof item.count === 'number') {
+            return sum + (item._id * item.count);
+          }
+          return sum;
+        }, 0);
         setAverageRating(Math.round((totalRating / data.totalReviews) * 10) / 10);
       } else {
         setAverageRating(0);
       }
+
     } catch (error) {
-      console.error('Error fetching reviews:', error);
-      setError(error.message); // ✅ ADDED: Set error state
-      // ✅ ADDED: Set fallback values on error
+      console.error('❌ Error fetching reviews:', error);
+      
+      // Better error handling
+      if (error.response?.status === 404) {
+        setError('Reviews not found for this product');
+      } else if (error.response?.status >= 500) {
+        setError('Server error. Please try again later.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your connection.');
+      } else {
+        setError(error.response?.data?.message || 'Failed to load reviews');
+      }
+      
+      // Set fallback values
       setReviews([]);
       setRatingDistribution([]);
       setTotalReviews(0);
@@ -74,35 +88,23 @@ const ReviewsSection = ({ productId, currentUser }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Please log in to submit a review');
-        return;
-      }
+      console.log('📝 Submitting review:', reviewData);
 
-      const response = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...reviewData,
-          productId // ✅ ADDED: Ensure productId is included
-        })
+      const response = await api.post('/api/reviews', {
+        ...reviewData,
+        productId
       });
 
-      if (response.ok) {
-        setShowReviewForm(false);
-        fetchReviews(); // Refresh reviews
-        alert('Review submitted successfully!');
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to submit review');
-      }
+      console.log('✅ Review submitted:', response.data);
+      
+      setShowReviewForm(false);
+      await fetchReviews(); // Refresh reviews
+      alert('Review submitted successfully!');
+
     } catch (error) {
-      console.error('Error submitting review:', error);
-      alert('Error submitting review');
+      console.error('❌ Error submitting review:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to submit review';
+      alert(errorMessage);
     }
   };
 
@@ -113,28 +115,18 @@ const ReviewsSection = ({ productId, currentUser }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Please log in to vote');
-        return;
-      }
+      console.log(`👍 Marking review ${reviewId} as helpful`);
 
-      const response = await fetch(`/api/reviews/${reviewId}/helpful`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.post(`/api/reviews/${reviewId}/helpful`);
+      
+      console.log('✅ Helpful vote updated:', response.data);
+      
+      await fetchReviews(); // Refresh to get updated counts
 
-      if (response.ok) {
-        fetchReviews(); // Refresh to get updated helpful counts
-      } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to update vote');
-      }
     } catch (error) {
-      console.error('Error updating helpful vote:', error);
-      alert('Error updating vote');
+      console.error('❌ Error updating helpful vote:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update vote';
+      alert(errorMessage);
     }
   };
 
@@ -147,14 +139,13 @@ const ReviewsSection = ({ productId, currentUser }) => {
     );
   }
 
-  // ✅ ADDED: Error state display
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Error loading reviews: {error}</p>
+        <p className="text-red-600 mb-4">Error loading reviews: {error}</p>
         <button 
           onClick={fetchReviews}
-          className="mt-4 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
         >
           Retry
         </button>
@@ -202,7 +193,6 @@ const ReviewsSection = ({ productId, currentUser }) => {
 
           <div className="md:col-span-2">
             {[5, 4, 3, 2, 1].map((stars) => {
-              // ✅ FIXED: Added proper validation for find operation
               const ratingData = Array.isArray(ratingDistribution) 
                 ? ratingDistribution.find(r => r && r._id === stars)
                 : null;
@@ -243,7 +233,6 @@ const ReviewsSection = ({ productId, currentUser }) => {
           </div>
         ) : (
           reviews.map((review) => {
-            // ✅ ADDED: Validate review object structure
             if (!review || !review._id) {
               return null;
             }
@@ -253,7 +242,6 @@ const ReviewsSection = ({ productId, currentUser }) => {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {/* ✅ FIXED: Added validation for nested user object */}
                       {review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <div>
@@ -289,7 +277,6 @@ const ReviewsSection = ({ productId, currentUser }) => {
                   </div>
                 </div>
 
-                {/* ✅ ADDED: Validation for title */}
                 {review.title && (
                   <h4 className="font-semibold text-gray-900 mb-2">{review.title}</h4>
                 )}
