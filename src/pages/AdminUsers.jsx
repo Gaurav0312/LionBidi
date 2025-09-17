@@ -1,5 +1,5 @@
 // pages/AdminUsers.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -11,15 +11,15 @@ import {
   Calendar,
   MapPin,
   MoreHorizontal,
-  Download,
-} from "lucide-react";
-import { BASE_URL } from "../utils/api";
+  Download
+} from 'lucide-react';
+import { BASE_URL } from '../utils/api';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
@@ -29,48 +29,44 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log("📄 Fetching users from admin API...");
-
-      const token = localStorage.getItem("adminToken");
-      console.log("🎫 Admin token exists:", !!token);
-
+      console.log('📄 Fetching users from admin API...');
+      
+      const token = localStorage.getItem('adminToken');
+      console.log('🎫 Admin token exists:', !!token);
+      
       const response = await fetch(`${BASE_URL}/api/admin/users`, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-
-      console.log("📡 Response status:", response.status);
-      console.log("📡 Response headers:", Object.fromEntries(response.headers));
-
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers));
+      
       // Handle non-JSON responses (like HTML error pages)
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
         const textResponse = await response.text();
-        console.error("❌ Non-JSON response received:", textResponse);
-        throw new Error(
-          `Server returned ${response.status}: Expected JSON but got ${contentType}`
-        );
+        console.error('❌ Non-JSON response received:', textResponse);
+        throw new Error(`Server returned ${response.status}: Expected JSON but got ${contentType}`);
       }
-
+      
       const data = await response.json();
-      console.log("📦 Response data:", data);
-
+      console.log('📦 Response data:', data);
+      
       if (data.success && data.users) {
         setUsers(data.users);
         console.log(`✅ Loaded ${data.users.length} users from database`);
       } else {
-        console.error("❌ API returned unsuccessful response:", data.message);
+        console.error('❌ API returned unsuccessful response:', data.message);
         // Fall back to empty array instead of mock data
         setUsers([]);
-        alert(`Failed to fetch users: ${data.message || "Unknown error"}`);
+        alert(`Failed to fetch users: ${data.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error("❌ Error fetching users:", error);
-      alert(
-        `Failed to fetch users: ${error.message}. Check console for details.`
-      );
+      console.error('❌ Error fetching users:', error);
+      alert(`Failed to fetch users: ${error.message}. Check console for details.`);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -79,57 +75,47 @@ const AdminUsers = () => {
 
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
-      console.log(
-        `📄 Toggling user ${userId} status from ${currentStatus} to ${!currentStatus}`
-      );
-
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(
-        `${BASE_URL}/api/admin/users/${userId}/toggle-status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ isActive: !currentStatus }),
-        }
-      );
+      console.log(`📄 Toggling user ${userId} status from ${currentStatus} to ${!currentStatus}`);
+      
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${BASE_URL}/api/admin/users/${userId}/toggle-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
 
       const data = await response.json();
-      console.log("📡 Toggle response:", data);
-
+      console.log('📡 Toggle response:', data);
+      
       if (data.success) {
-        setUsers(
-          users.map((user) =>
-            user._id === userId ? { ...user, isActive: !currentStatus } : user
-          )
-        );
-        alert(
-          `User ${!currentStatus ? "activated" : "deactivated"} successfully!`
-        );
+        setUsers(users.map(user => 
+          user._id === userId ? { ...user, isActive: !currentStatus } : user
+        ));
+        alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
         console.log(`✅ User ${userId} status toggled to ${!currentStatus}`);
       } else {
-        console.error("❌ Failed to update user status:", data.message);
+        console.error('❌ Failed to update user status:', data.message);
         alert(`Failed to update user status: ${data.message}`);
       }
     } catch (error) {
-      console.error("❌ Error updating user status:", error);
+      console.error('❌ Error updating user status:', error);
       alert(`Error occurred while updating user status: ${error.message}`);
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && user.isActive) ||
-      (statusFilter === "inactive" && !user.isActive);
-
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && user.isActive) ||
+      (statusFilter === 'inactive' && !user.isActive);
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -164,7 +150,7 @@ const AdminUsers = () => {
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => u.isActive).length}
+                {users.filter(u => u.isActive).length}
               </p>
               <p className="text-sm text-gray-600">Active Users</p>
             </div>
@@ -178,7 +164,7 @@ const AdminUsers = () => {
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter((u) => !u.isActive).length}
+                {users.filter(u => !u.isActive).length}
               </p>
               <p className="text-sm text-gray-600">Inactive Users</p>
             </div>
@@ -192,13 +178,11 @@ const AdminUsers = () => {
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">
-                {
-                  users.filter((u) => {
-                    const lastWeek = new Date();
-                    lastWeek.setDate(lastWeek.getDate() - 7);
-                    return new Date(u.createdAt) > lastWeek;
-                  }).length
-                }
+                {users.filter(u => {
+                  const lastWeek = new Date();
+                  lastWeek.setDate(lastWeek.getDate() - 7);
+                  return new Date(u.createdAt) > lastWeek;
+                }).length}
               </p>
               <p className="text-sm text-gray-600">New This Week</p>
             </div>
@@ -220,7 +204,7 @@ const AdminUsers = () => {
             />
           </div>
         </div>
-
+        
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-400" />
           <select
@@ -240,12 +224,8 @@ const AdminUsers = () => {
         {filteredUsers.length === 0 ? (
           <div className="text-center py-12">
             <UserX className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No Users Found
-            </h3>
-            <p className="text-gray-500">
-              No users match your current filters.
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Users Found</h3>
+            <p className="text-gray-500">No users match your current filters.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -283,42 +263,36 @@ const AdminUsers = () => {
                           </span>
                         </div>
                         <div className="ml-4">
-                          <div className="font-medium text-gray-900">
-                            {user.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {user.email}
-                          </div>
+                          <div className="font-medium text-gray-900">{user.name || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{user.email || 'N/A'}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.phone}</div>
+                      <div className="text-sm text-gray-900">{user.phone || 'N/A'}</div>
                       <div className="text-sm text-gray-500">
-                        {user.address?.city}, {user.address?.state}
+                        {user.address?.city || 'N/A'}, {user.address?.state || 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 font-medium">
-                        {user.totalOrders} orders
+                        {user.totalOrders || 0} orders
                       </div>
                       <div className="text-sm text-gray-500">
-                        ₹{user.totalSpent?.toFixed(2)}
+                        ₹{user.totalSpent?.toFixed(2) || '0.00'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {user.isActive ? "Active" : "Inactive"}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.isActive 
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
@@ -330,23 +304,15 @@ const AdminUsers = () => {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() =>
-                            toggleUserStatus(user._id, user.isActive)
-                          }
+                          onClick={() => toggleUserStatus(user._id, user.isActive)}
                           className={`${
-                            user.isActive
-                              ? "text-red-600 hover:text-red-900"
-                              : "text-green-600 hover:text-green-900"
+                            user.isActive 
+                              ? 'text-red-600 hover:text-red-900' 
+                              : 'text-green-600 hover:text-green-900'
                           }`}
-                          title={
-                            user.isActive ? "Deactivate User" : "Activate User"
-                          }
+                          title={user.isActive ? 'Deactivate User' : 'Activate User'}
                         >
-                          {user.isActive ? (
-                            <UserX className="w-4 h-4" />
-                          ) : (
-                            <UserCheck className="w-4 h-4" />
-                          )}
+                          {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                         </button>
                         <button className="text-gray-400 hover:text-gray-600">
                           <MoreHorizontal className="w-4 h-4" />
@@ -367,9 +333,7 @@ const AdminUsers = () => {
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">
-                  User Details
-                </h3>
+                <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
                 <button
                   onClick={() => setSelectedUser(null)}
                   className="text-gray-400 hover:text-gray-600"
@@ -381,9 +345,7 @@ const AdminUsers = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Personal Information */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-4">
-                    Personal Information
-                  </h4>
+                  <h4 className="font-semibold text-gray-900 mb-4">Personal Information</h4>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -392,89 +354,72 @@ const AdminUsers = () => {
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
-                          {selectedUser.name}
-                        </p>
+                        <p className="font-medium text-gray-900">{selectedUser.name || 'N/A'}</p>
                         <p className="text-sm text-gray-600">Customer</p>
                       </div>
                     </div>
-
+                    
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Mail className="w-4 h-4" />
-                      <span>{selectedUser.email}</span>
+                      <span>{selectedUser.email || 'N/A'}</span>
                     </div>
-
+                    
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4" />
-                      <span>{selectedUser.phone}</span>
+                      <span>{selectedUser.phone || 'N/A'}</span>
                     </div>
-
+                    
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <MapPin className="w-4 h-4" />
-                      <span>
-                        {selectedUser.address?.city},{" "}
-                        {selectedUser.address?.state}
-                      </span>
+                      <span>{selectedUser.address?.city || 'N/A'}, {selectedUser.address?.state || 'N/A'}</span>
                     </div>
-
+                    
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4" />
-                      <span>
-                        Joined{" "}
-                        {new Date(selectedUser.createdAt).toLocaleDateString()}
-                      </span>
+                      <span>Joined {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Account Stats */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-4">
-                    Account Statistics
-                  </h4>
+                  <h4 className="font-semibold text-gray-900 mb-4">Account Statistics</h4>
                   <div className="space-y-4">
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Status</span>
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            selectedUser.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {selectedUser.isActive ? "Active" : "Inactive"}
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedUser.isActive 
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedUser.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                     </div>
-
+                    
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Total Orders</span>
-                        <span className="font-semibold text-gray-900">
-                          {selectedUser.totalOrders}
-                        </span>
+                        <span className="font-semibold text-gray-900">{selectedUser.totalOrders || 0}</span>
                       </div>
                     </div>
-
+                    
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Total Spent</span>
-                        <span className="font-semibold text-gray-900">
-                          ₹{selectedUser.totalSpent?.toFixed(2)}
-                        </span>
+                        <span className="font-semibold text-gray-900">₹{selectedUser.totalSpent?.toFixed(2) || '0.00'}</span>
                       </div>
                     </div>
-
+                    
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Last Login</span>
                         <span className="text-sm text-gray-600">
-                          {selectedUser.lastLogin
-                            ? new Date(
-                                selectedUser.lastLogin
-                              ).toLocaleDateString()
-                            : "Never"}
+                          {selectedUser.lastLogin ? 
+                            new Date(selectedUser.lastLogin).toLocaleDateString() : 
+                            'Never'
+                          }
                         </span>
                       </div>
                     </div>
@@ -484,16 +429,14 @@ const AdminUsers = () => {
 
               <div className="flex justify-end mt-6 space-x-2">
                 <button
-                  onClick={() =>
-                    toggleUserStatus(selectedUser._id, selectedUser.isActive)
-                  }
+                  onClick={() => toggleUserStatus(selectedUser._id, selectedUser.isActive)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium ${
                     selectedUser.isActive
-                      ? "bg-red-600 hover:bg-red-700 text-white"
-                      : "bg-green-600 hover:bg-green-700 text-white"
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
                   }`}
                 >
-                  {selectedUser.isActive ? "Deactivate User" : "Activate User"}
+                  {selectedUser.isActive ? 'Deactivate User' : 'Activate User'}
                 </button>
                 <button
                   onClick={() => setSelectedUser(null)}
