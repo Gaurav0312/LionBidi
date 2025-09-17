@@ -5,7 +5,10 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black text-gray-200">
+    <footer
+      className="relative bg-gradient-to-br from-[#cc3300] via-[#ff4500] to-[#cc3300]
+ text-white"
+    >
       {/* Glowing Top Border */}
       <div className="h-1 bg-gradient-to-r from-transparent via-amber-400/70 to-transparent shadow-lg shadow-amber-500/30"></div>
 
@@ -16,7 +19,7 @@ const Footer = () => {
             <div className="flex items-center mb-6">
               <div className="relative">
                 <img
-                  src="/lion.png"
+                  src="https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png"
                   alt="Lion Bidi"
                   className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
                 />
@@ -29,10 +32,11 @@ const Footer = () => {
               </div>
             </div>
 
-            <p className="text-gray-300 mb-6 text-sm leading-relaxed">
-              Handcrafted with care, <strong className="text-white">Lion Bidi</strong> represents the authentic spirit
-              of Indian tradition. Our premium tobacco ensures a smooth and
-              natural experience — trusted by generations.
+            <p className="text-gray-200 mb-6 text-sm leading-relaxed">
+              Handcrafted with care,{" "}
+              <strong className="text-white">Lion Bidi</strong> represents the
+              authentic spirit of Indian tradition. Our premium tobacco ensures
+              a smooth and natural experience — trusted by generations.
             </p>
           </div>
 
@@ -43,7 +47,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/about"
-                  className="text-white hover:text-gray-400 transition-colors text-sm"
+                  className="text-white hover:text-gray-200 font-semibold transition-colors text-sm"
                 >
                   About Us
                 </Link>
@@ -52,7 +56,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/contact"
-                  className="text-white hover:text-gray-400 transition-colors text-sm"
+                  className="text-white hover:text-gray-200 font-semibold transition-colors text-sm"
                 >
                   Contact Us
                 </Link>
@@ -60,7 +64,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/privacy-policy"
-                  className="text-white hover:text-gray-400 transition-colors text-sm"
+                  className="text-white hover:text-gray-200 font-semibold transition-colors text-sm"
                 >
                   Privacy Policy
                 </Link>
@@ -68,7 +72,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/terms"
-                  className="text-white hover:text-gray-400 transition-colors text-sm"
+                  className="text-white hover:text-gray-200 font-semibold transition-colors text-sm"
                 >
                   Terms & Conditions
                 </Link>
@@ -76,7 +80,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/refund-policy"
-                  className="text-white hover:text-gray-400 transition-colors text-sm"
+                  className="text-white hover:text-gray-200 font-semibold transition-colors text-sm"
                 >
                   Refund Policy
                 </Link>
@@ -135,7 +139,7 @@ const Footer = () => {
                 </div>
                 <a
                   href="mailto:lionbidicompany@gmail.com"
-                  className="text-white text-sm hover:text-gray-400 transition-colors"
+                  className="text-white text-sm hover:text-gray-200 font-semibold transition-colors"
                 >
                   lionbidicompany@gmail.com
                 </a>
@@ -148,7 +152,7 @@ const Footer = () => {
                 </div>
                 <a
                   href="tel:+919589773525"
-                  className=" text-white text-sm hover:text-gray-400 transition-colors"
+                  className=" text-white text-sm hover:text-gray-200 font-semibold transition-colors"
                 >
                   +91-9589773525
                 </a>
@@ -159,7 +163,9 @@ const Footer = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3 shadow-md">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-white text-sm">Chhatarpur, Madhya Pradesh</span>
+                <span className="text-white font-semibold text-sm">
+                  Chhatarpur, Madhya Pradesh
+                </span>
               </div>
             </div>
           </div>
@@ -174,7 +180,7 @@ const Footer = () => {
                 <h4 className="text-white font-semibold text-sm">
                   Fast Delivery
                 </h4>
-                <p className="text-gray-400 text-xs">
+                <p className="text-gray-200 text-xs">
                   Same day delivery available
                 </p>
               </div>
@@ -188,7 +194,7 @@ const Footer = () => {
                 <h4 className="text-white font-semibold text-sm">
                   Premium Quality
                 </h4>
-                <p className="text-gray-400 text-xs">
+                <p className="text-gray-200 text-xs">
                   100% authentic tobacco products
                 </p>
               </div>
@@ -202,7 +208,7 @@ const Footer = () => {
                 <h4 className="text-white font-semibold text-sm">
                   Secure Shopping
                 </h4>
-                <p className="text-gray-400 text-xs">
+                <p className="text-gray-200 text-xs">
                   Safe & encrypted payments
                 </p>
               </div>
@@ -211,21 +217,20 @@ const Footer = () => {
         </div>
 
         {/* Bottom Footer */}
-        <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col lg:flex-row justify-between items-center gap-6">
-          <p className="text-gray-400 text-sm text-center lg:text-left">
-            © 2025{" "}
-            <span className="text-white font-semibold">Lion Bidi</span>. All
-            rights reserved. <br />{" "}
-            <span className="text-gray-500 text-xs">
+        <div className="border-t border-gray-800/30 mt-12 pt-8 flex flex-col lg:flex-row justify-between items-center gap-6 bg-black/15 rounded-lg p-4">
+          <p className="text-gray-200 text-sm text-center lg:text-left">
+            © 2025 <span className="text-white font-semibold">Lion Bidi</span>.
+            All rights reserved. <br />
+            <span className="text-gray-200 text-xs">
               Crafted with tradition, delivered with care
             </span>
           </p>
 
           <div className="flex flex-wrap gap-2 justify-center">
-            {[ "UPI", "PayTM", "PhonePe", "Google Pay", ].map((pm) => (
+            {["UPI", "PayTM", "PhonePe", "Google Pay"].map((pm) => (
               <div
                 key={pm}
-                className="bg-transparent rounded-lg px-3 py-2 text-xs font-bold text-white border border-gray-500/40"
+                className="bg-black/20 rounded-lg px-3 py-2 text-xs font-bold text-white border border-gray-500/40 shadow-sm hover:bg-black/30 transition-all cursor-pointer"
               >
                 {pm}
               </div>
