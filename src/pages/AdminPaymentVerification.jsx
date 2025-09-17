@@ -29,8 +29,11 @@ const AdminPaymentVerification = () => {
   const fetchPendingVerifications = async () => {
   try {
     console.log('🔄 Fetching pending verifications...');
+    console.log('🔗 API URL:', `${BASE_URL}/api/orders/admin/pending-verifications`);
     
     const token = localStorage.getItem('adminToken');
+    console.log('🎫 Admin token exists:', !!token);
+    
     const response = await fetch(`${BASE_URL}/api/orders/admin/pending-verifications`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -39,27 +42,34 @@ const AdminPaymentVerification = () => {
     });
     
     console.log('📡 Response status:', response.status);
+    console.log('📡 Response headers:', Object.fromEntries(response.headers));
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Handle non-JSON responses (like HTML error pages)
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const textResponse = await response.text();
+      console.error('❌ Non-JSON response received:', textResponse);
+      throw new Error(`Server returned ${response.status}: Expected JSON but got ${contentType}`);
     }
     
     const data = await response.json();
-    console.log('📊 Raw API response:', data); // ✅ Add debugging
+    console.log('📊 Parsed data:', data);
     
     if (data.success) {
-      console.log('📊 Orders data:', data.orders); // ✅ Add debugging
       setPendingOrders(data.orders || []);
       console.log(`✅ Found ${data.orders?.length || 0} pending orders`);
     } else {
       console.error('❌ API returned error:', data.message);
+      // Don't throw here, just show empty state
     }
   } catch (error) {
     console.error('❌ Error fetching pending verifications:', error);
+    // Don't throw here, just show empty state
   } finally {
     setLoading(false);
   }
 };
+
 
   const verifyPayment = async (orderId, verified) => {
     try {

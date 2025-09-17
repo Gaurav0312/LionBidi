@@ -1,4 +1,4 @@
-//App.js - Updated with Orders route
+//App.js
 import React, { useState, useEffect } from "react";
 import {
   Routes,

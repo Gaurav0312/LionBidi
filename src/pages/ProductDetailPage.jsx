@@ -27,6 +27,7 @@ import { useAppContext } from "../context/AppContext";
 import { generateSlug } from "../utils/slugify";
 import ProductCard from "../components/ProductCard";
 import HandCraftedIcon from "../components/HandCraftedIcon";
+import ReviewsSection from "../components/ReviewsSection";
 
 // Updated product data structure - using slugs as keys
 const productData = {
@@ -103,7 +104,7 @@ const productData = {
     discount: 30,
     rating: 4.3,
     reviewCount: 89,
-    minQuantity: 2,
+    minQuantity: 1,
     bulkPricing: [
       { minQty: 10, discount: 10, label: "Buy 10+ pieces: Save ₹10 each" },
       { minQty: 20, discount: 15, label: "Buy 20+ pieces: Save ₹15 each" },
@@ -1011,14 +1012,6 @@ const ProductDetailPage = () => {
                     className={`w-6 h-6 ${isWishlisted ? "fill-current" : ""}`}
                   />
                 </button>
-
-                <button
-                  onClick={handleShare}
-                  className="p-4 bg-white border-2 border-gray-300 text-gray-600 hover:border-blue-300 hover:text-blue-600 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  aria-label="Share product"
-                >
-                  <Share className="w-6 h-6" />
-                </button>
               </div>
 
               <div className="mt-4">
@@ -1032,7 +1025,10 @@ const ProductDetailPage = () => {
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <button className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center justify-center space-x-2 p-3 border-2 border-orange-200 rounded-full hover:bg-orange-50 transition-colors duration-200"
+                >
                   <Share className="w-5 h-5 text-divine-orange" />
                   <span className="text-sm text-divine-orange font-medium">
                     Share
@@ -1188,138 +1184,10 @@ const ProductDetailPage = () => {
 
             {/* Reviews Tab */}
             {activeTab === "reviews" && (
-              <div className="max-w-4xl space-y-6">
-                {/* Reviews Summary */}
-                <div className="bg-white p-8 rounded-2xl border border-gray-200">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      Customer Reviews
-                    </h3>
-                    <button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
-                      Write a Review
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-orange-600 mb-2">
-                        {currentProduct.rating || 4.5}
-                      </div>
-                      <div className="flex justify-center mb-2">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-5 h-5 ${
-                              i < Math.floor(currentProduct.rating || 4.5)
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="text-gray-600">
-                        Based on {currentProduct.reviewCount || 127} reviews
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      {[5, 4, 3, 2, 1].map((stars) => {
-                        const percentage = Math.floor(Math.random() * 50) + 20;
-                        return (
-                          <div
-                            key={stars}
-                            className="flex items-center space-x-3 mb-2"
-                          >
-                            <span className="text-sm font-medium w-8">
-                              {stars}★
-                            </span>
-                            <div className="flex-1 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-orange-400 h-2 rounded-full transition-all duration-500"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-600 w-12">
-                              {percentage}%
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Individual Reviews */}
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="bg-white p-6 rounded-xl border border-gray-200"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                            {review.user.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-900 flex items-center">
-                              {review.user}
-                              {review.verified && (
-                                <span className="ml-2 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs">
-                                  Verified Purchase
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-4 h-4 ${
-                                      i < review.rating
-                                        ? "text-yellow-400 fill-current"
-                                        : "text-gray-300"
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-gray-500 text-sm">
-                                {review.date}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-gray-700 mb-4">{review.comment}</p>
-
-                      <div className="flex items-center space-x-4">
-                        <button
-                          onClick={() => handleReviewHelpful(review.id)}
-                          className={`flex items-center space-x-1 transition-colors ${
-                            review.isHelpful
-                              ? "text-green-600"
-                              : "text-gray-600 hover:text-green-600"
-                          }`}
-                        >
-                          <ThumbsUp
-                            className={`w-4 h-4 ${
-                              review.isHelpful ? "fill-current" : ""
-                            }`}
-                          />
-                          <span className="text-sm">
-                            Helpful ({review.helpful})
-                          </span>
-                        </button>
-                        <button className="flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition-colors">
-                          <MessageCircle className="w-4 h-4" />
-                          <span className="text-sm">Reply</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ReviewsSection
+                productId={currentProduct.id}
+                currentUser={user}
+              />
             )}
           </div>
         </div>
