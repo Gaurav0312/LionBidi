@@ -29,7 +29,6 @@ import ProductCard from "../components/ProductCard";
 import HandCraftedIcon from "../components/HandCraftedIcon";
 import ReviewsSection from "../components/ReviewsSection";
 
-// Updated product data structure - using slugs as keys
 const productData = {
   "special-lion-bidi-big": {
     id: 1,
@@ -229,12 +228,6 @@ const ProductDetailPage = () => {
       }));
   }, [currentProduct]);
 
-  // Check if product is in wishlist
-  // const isWishlisted = currentProduct
-  //   ? wishlist.some((item) => item.id === currentProduct.id)
-  //   : false;
-
-  // Or better, update it in useEffect when product loads:
   useEffect(() => {
     if (currentProduct) {
       setQuantity(currentProduct.minQuantity || 1);
@@ -254,7 +247,6 @@ const ProductDetailPage = () => {
       if (product) {
         setCurrentProduct(product);
       } else {
-        // Product not found, redirect to home or show error
         setCurrentProduct(null);
       }
 
@@ -404,23 +396,6 @@ const ProductDetailPage = () => {
     addToWishlist(currentProduct);
   };
 
-  // Handle review helpful
-  const handleReviewHelpful = (reviewId) => {
-    setReviews(
-      reviews.map((review) =>
-        review.id === reviewId
-          ? {
-              ...review,
-              helpful: review.isHelpful
-                ? review.helpful - 1
-                : review.helpful + 1,
-              isHelpful: !review.isHelpful,
-            }
-          : review
-      )
-    );
-  };
-
   // Handle share
   const handleShare = async () => {
     if (navigator.share) {
@@ -436,23 +411,6 @@ const ProductDetailPage = () => {
     } else {
       setShowShareModal(true);
     }
-  };
-
-  // Helper function to clean product data
-  const cleanProductForCart = (product) => {
-    const {
-      benefits, // Remove React nodes
-      specifications, // Keep this as it's just strings
-      ...cleanProduct
-    } = product;
-
-    return {
-      ...cleanProduct,
-      // Ensure we have proper image
-      image: product.images?.[0] || product.image,
-      // Filter out any React nodes from features if they exist
-      features: product.features?.filter((f) => typeof f === "string"),
-    };
   };
 
   // Copy to clipboard
