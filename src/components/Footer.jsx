@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 const Footer = () => {
   return (
     <footer
-      className="relative bg-gradient-to-br from-[#cc3300] via-[#ff4500] to-[#cc3300]
+      className="relative bg-gradient-to-br from-[#ff4500] via-[#ff6000] to-[#ff4500]
  text-white"
     >
       {/* Glowing Top Border */}
