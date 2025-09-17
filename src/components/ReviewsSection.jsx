@@ -307,7 +307,7 @@ const ReviewsSection = ({ productId, currentUser }) => {
                         className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80"
                         onClick={() => {/* Open image modal */}}
                         onError={(e) => {
-                          e.target.style.display = 'none'; // Hide broken images
+                          e.target.style.display = 'none';
                         }}
                       />
                     ))}
