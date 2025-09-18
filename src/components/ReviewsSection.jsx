@@ -12,6 +12,7 @@ const ReviewsSection = ({ productId, currentUser }) => {
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
   const [error, setError] = useState(null);
+  const [votingStates, setVotingStates] = useState({}); // Track voting states per review
 
   useEffect(() => {
     if (productId) {
@@ -125,19 +126,38 @@ const ReviewsSection = ({ productId, currentUser }) => {
       return;
     }
 
+    // Prevent multiple clicks while processing
+    if (votingStates[reviewId]) {
+      return;
+    }
+
     try {
-      console.log(`👍 Marking review ${reviewId} as helpful`);
+      setVotingStates(prev => ({ ...prev, [reviewId]: true }));
+      console.log(`Toggling helpful vote for review ${reviewId}`);
 
       const response = await api.post(`/api/reviews/${reviewId}/helpful`);
       
-      console.log('✅ Helpful vote updated:', response.data);
+      console.log('Helpful vote response:', response.data);
       
-      await fetchReviews(); // Refresh to get updated counts
+      // Update the local review data with the response
+      setReviews(prevReviews => 
+        prevReviews.map(review => 
+          review._id === reviewId 
+            ? { 
+                ...review, 
+                helpfulVotes: response.data.helpfulVotes,
+                hasUserVoted: response.data.hasVoted 
+              }
+            : review
+        )
+      );
 
     } catch (error) {
-      console.error('❌ Error updating helpful vote:', error);
+      console.error('Error updating helpful vote:', error);
       const errorMessage = error.response?.data?.message || 'Failed to update vote';
       alert(errorMessage);
+    } finally {
+      setVotingStates(prev => ({ ...prev, [reviewId]: false }));
     }
   };
 
@@ -252,26 +272,23 @@ const ReviewsSection = ({ productId, currentUser }) => {
               <div key={review._id} className="bg-white p-6 rounded-xl border border-gray-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-r from-orange-400 to-red-500">
                       {review.userId?.profileImage ? (
                         <img
                           src={review.userId.profileImage}
                           alt={review.userId?.name || 'User'}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            // Fallback to colored circle with initials if image fails
+                            // Hide broken image and show fallback
                             e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            e.target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">${review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}</div>`;
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-full h-full flex items-center justify-center text-white font-bold">
                           {review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                       )}
-                      <div className="w-full h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold" style={{ display: 'none' }}>
-                        {review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900 flex items-center">
@@ -333,12 +350,18 @@ const ReviewsSection = ({ productId, currentUser }) => {
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={() => handleHelpfulClick(review._id)}
-                    className="flex items-center space-x-1 text-gray-600 hover:text-green-600 transition-colors disabled:opacity-50"
-                    disabled={!currentUser}
+                    disabled={!currentUser || votingStates[review._id]}
+                    className={`flex items-center space-x-1 transition-colors disabled:opacity-50 ${
+                      review.hasUserVoted 
+                        ? 'text-green-600' 
+                        : 'text-gray-600 hover:text-green-600'
+                    }`}
                   >
-                    <ThumbsUp className="w-4 h-4" />
+                    <ThumbsUp 
+                      className={`w-4 h-4 ${review.hasUserVoted ? 'fill-current' : ''}`} 
+                    />
                     <span className="text-sm">
-                      Helpful ({review.helpfulVotes || 0})
+                      {review.hasUserVoted ? 'Helpful' : 'Helpful'} ({review.helpfulVotes || 0})
                     </span>
                   </button>
                 </div>
