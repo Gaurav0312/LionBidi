@@ -1,4 +1,4 @@
-// components/ReviewsSection.jsx - FIXED VERSION
+//components/ReviewsSection.jsx
 import React, { useState, useEffect } from 'react';
 import { Star, ThumbsUp, MessageCircle } from 'lucide-react';
 import ReviewForm from './ReviewForm';
@@ -94,31 +94,39 @@ const ReviewsSection = ({ productId, currentUser }) => {
   };
 
   const handleSubmitReview = async (reviewData) => {
-    if (!currentUser) {
-      alert('You must be logged in to submit a review');
-      return;
-    }
+  if (!currentUser) {
+    alert('You must be logged in to submit a review');
+    return;
+  }
 
-    try {
-      console.log('📝 Submitting review:', reviewData);
+  try {
+    console.log('📝 Submitting review:', reviewData);
+    console.log('👤 Current user:', currentUser);
 
-      const response = await api.post('/api/reviews', {
-        ...reviewData,
-        productId
-      });
+    const response = await api.post('/api/reviews', {
+      ...reviewData,
+      productId,
+      currentUser: currentUser // Pass current user data to backend
+    });
 
-      console.log('✅ Review submitted:', response.data);
-      
-      setShowReviewForm(false);
-      await fetchReviews(); // Refresh reviews
-      alert('Review submitted successfully!');
+    console.log('✅ Review submitted:', response.data);
+    
+    setShowReviewForm(false);
+    
+    // Add delay and then refresh
+    setTimeout(async () => {
+      console.log('🔄 Refetching reviews...');
+      await fetchReviews();
+    }, 500);
+    
+    alert('Review submitted successfully!');
 
-    } catch (error) {
-      console.error('❌ Error submitting review:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to submit review';
-      alert(errorMessage);
-    }
-  };
+  } catch (error) {
+    console.error('❌ Error submitting review:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to submit review';
+    alert(errorMessage);
+  }
+};
 
   const handleHelpfulClick = async (reviewId) => {
     if (!currentUser) {
