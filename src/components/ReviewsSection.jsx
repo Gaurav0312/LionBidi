@@ -60,22 +60,33 @@ const ReviewsSection = ({ productId, currentUser }) => {
     } catch (error) {
       console.error('❌ Error fetching reviews:', error);
       
-      // Better error handling
+      // Handle 404 as "no reviews yet" instead of an error
       if (error.response?.status === 404) {
-        setError('Reviews not found for this product');
+        console.log('📝 No reviews found for this product - this is normal for new products');
+        setError(null); // Don't show error for 404
+        setReviews([]);
+        setRatingDistribution([]);
+        setTotalReviews(0);
+        setAverageRating(0);
       } else if (error.response?.status >= 500) {
         setError('Server error. Please try again later.');
+        setReviews([]);
+        setRatingDistribution([]);
+        setTotalReviews(0);
+        setAverageRating(0);
       } else if (error.code === 'NETWORK_ERROR') {
         setError('Network error. Please check your connection.');
+        setReviews([]);
+        setRatingDistribution([]);
+        setTotalReviews(0);
+        setAverageRating(0);
       } else {
         setError(error.response?.data?.message || 'Failed to load reviews');
+        setReviews([]);
+        setRatingDistribution([]);
+        setTotalReviews(0);
+        setAverageRating(0);
       }
-      
-      // Set fallback values
-      setReviews([]);
-      setRatingDistribution([]);
-      setTotalReviews(0);
-      setAverageRating(0);
     } finally {
       setLoading(false);
     }
@@ -241,8 +252,26 @@ const ReviewsSection = ({ productId, currentUser }) => {
               <div key={review._id} className="bg-white p-6 rounded-xl border border-gray-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                      {review.userId?.profileImage ? (
+                        <img
+                          src={review.userId.profileImage}
+                          alt={review.userId?.name || 'User'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to colored circle with initials if image fails
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                      <div className="w-full h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold" style={{ display: 'none' }}>
+                        {review.userId?.name ? review.userId.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900 flex items-center">
