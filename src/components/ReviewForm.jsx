@@ -1,4 +1,4 @@
-// components/ReviewForm.jsx
+// components/ReviewForm.jsx - Fixed version with proper image handling
 import React, { useState } from 'react';
 import { Star, Upload, X } from 'lucide-react';
 
@@ -11,27 +11,83 @@ const ReviewForm = ({ productId, onSubmit, onCancel }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [imagePreviewUrls, setImagePreviewUrls] = useState([]); // For preview display
 
   const handleRatingClick = (rating) => {
     setFormData(prev => ({ ...prev, rating }));
     setErrors(prev => ({ ...prev, rating: '' }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    // In real implementation, upload to Cloudinary and get URLs
-    // For now, just store file objects
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...files].slice(0, 3) // Max 3 images
-    }));
+    const maxImages = 3;
+    const maxSize = 5 * 1024 * 1024; // 5MB per image
+    
+    // Filter and validate files
+    const validFiles = files.filter(file => {
+      if (file.size > maxSize) {
+        alert(`Image ${file.name} is too large. Maximum size is 5MB.`);
+        return false;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not a valid image file.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (formData.images.length + validFiles.length > maxImages) {
+      alert(`You can only upload up to ${maxImages} images.`);
+      return;
+    }
+
+    try {
+      // Convert files to base64 for storage/submission
+      const base64Images = await Promise.all(
+        validFiles.map(file => convertFileToBase64(file))
+      );
+
+      // Create preview URLs for display
+      const previewUrls = validFiles.map(file => URL.createObjectURL(file));
+
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...base64Images]
+      }));
+
+      setImagePreviewUrls(prev => [...prev, ...previewUrls]);
+
+    } catch (error) {
+      console.error('Error processing images:', error);
+      alert('Error processing images. Please try again.');
+    }
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  // Helper function to convert file to base64
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const removeImage = (index) => {
+    // Revoke the preview URL to free memory
+    URL.revokeObjectURL(imagePreviewUrls[index]);
+
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
+
+    setImagePreviewUrls(prev => 
+      prev.filter((_, i) => i !== index)
+    );
   };
 
   const validateForm = () => {
@@ -53,13 +109,38 @@ const ReviewForm = ({ productId, onSubmit, onCancel }) => {
 
     setIsSubmitting(true);
     try {
-      await onSubmit({ ...formData, productId });
+      // Submit form data with base64 images
+      await onSubmit({ 
+        ...formData, 
+        productId,
+        images: formData.images // These are now base64 strings
+      });
+      
+      // Clean up preview URLs
+      imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+      
+      // Reset form
+      setFormData({
+        rating: 0,
+        title: '',
+        comment: '',
+        images: []
+      });
+      setImagePreviewUrls([]);
+      
     } catch (error) {
       console.error('Error submitting review:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Clean up preview URLs on component unmount
+  React.useEffect(() => {
+    return () => {
+      imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-200">
@@ -130,7 +211,7 @@ const ReviewForm = ({ productId, onSubmit, onCancel }) => {
         {/* Image Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Add Photos (Optional)
+            Add Photos (Optional) - Max 3 images, 5MB each
           </label>
           <div className="flex items-center space-x-4">
             <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center space-x-2 transition-colors">
@@ -142,27 +223,35 @@ const ReviewForm = ({ productId, onSubmit, onCancel }) => {
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
+                disabled={formData.images.length >= 3}
               />
             </label>
+            <span className="text-sm text-gray-500">
+              {formData.images.length}/3 images
+            </span>
           </div>
           
           {/* Image Preview */}
-          {formData.images.length > 0 && (
-            <div className="flex space-x-2 mt-2">
-              {formData.images.map((image, index) => (
-                <div key={index} className="relative">
+          {imagePreviewUrls.length > 0 && (
+            <div className="flex space-x-2 mt-3 flex-wrap gap-2">
+              {imagePreviewUrls.map((previewUrl, index) => (
+                <div key={index} className="relative group">
                   <img
-                    src={URL.createObjectURL(image)}
+                    src={previewUrl}
                     alt={`Review ${index + 1}`}
-                    className="w-16 h-16 object-cover rounded-lg"
+                    className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="w-3 h-3" />
                   </button>
+                  {/* Image size indicator */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded-b-lg">
+                    Image {index + 1}
+                  </div>
                 </div>
               ))}
             </div>
@@ -174,7 +263,7 @@ const ReviewForm = ({ productId, onSubmit, onCancel }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Review'}
           </button>
