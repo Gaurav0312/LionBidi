@@ -62,6 +62,7 @@ import Layout from "./components/Layout";
 
 // Backend API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
 
 const App = () => {
   const navigate = useNavigate();
@@ -316,9 +317,68 @@ const App = () => {
   console.log("User data received:", userData);
 
   try {
-    // Check if this is already processed user data (from successful auth) or login credentials
-    if (userData.token && userData.email) {
-      // This is already authenticated user data - Method 1 approach
+    // Check if this is login credentials (email + password)
+    if (userData.email && userData.password && !userData.token) {
+      console.log("Processing login credentials via API...");
+      
+      const response = await fetch(`${BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email: userData.email.toLowerCase().trim(),
+          password: userData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Store token
+      localStorage.setItem("token", data.token);
+      
+      // Create user object
+      const newUserData = {
+        id: data.user._id || data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone,
+        isAdmin: data.user.isAdmin || data.user.role === "admin",
+        role: data.user.role,
+        avatar: data.user.avatar,
+        isEmailVerified: data.user.isEmailVerified,
+        isPhoneVerified: data.user.isPhoneVerified,
+        addresses: data.user.addresses,
+        wishlist: data.user.wishlist,
+        token: data.token,
+        _loginTimestamp: Date.now(),
+        _forceUpdate: Math.random().toString(36),
+      };
+
+      // Update both local and Redux state
+      setUser(newUserData);
+      localStorage.setItem("user", JSON.stringify(newUserData));
+      
+      // Also update Redux state for consistency
+      dispatch(loginUserRedux({
+        email: userData.email,
+        password: userData.password
+      })).catch(err => console.log("Redux login error (non-critical):", err));
+
+      console.log("User state updated to:", newUserData);
+
+      // Handle guest data merging
+      await handleGuestDataMerging();
+      
+      return newUserData;
+
+    } else if (userData.token && userData.email) {
+      // This is already authenticated user data (from OAuth, etc.)
       console.log("Processing authenticated user data...");
       
       // Store token first
@@ -342,51 +402,8 @@ const App = () => {
 
       // Handle guest data merging
       await handleGuestDataMerging();
-      
-      // Close modal and show success
-      closeAuthModal();
-      toast.success("Login successful!");
-
-      // Force component updates
-      window.dispatchEvent(new CustomEvent('user-state-changed', { 
-        detail: { user: newUserData, loggedIn: true } 
-      }));
 
       return newUserData;
-
-    } else if (userData.email && userData.password) {
-      // These are login credentials - Method 2 approach
-      console.log("Processing login credentials via Redux...");
-      
-      const result = await dispatch(loginUserRedux({
-        email: userData.email,
-        password: userData.password
-      })).unwrap();
-
-      console.log("Redux login successful:", result.user);
-
-      // Sync local state immediately
-      setUser(result.user);
-
-      // Handle guest data merging (Redux might have already done this)
-      await handleGuestDataMerging();
-
-      // Force component updates
-      setTimeout(() => {
-        dispatch(refreshUserState());
-        console.log("Forced Redux state refresh");
-      }, 50);
-
-      // Close modal and show success
-      closeAuthModal();
-      toast.success("Login successful!");
-
-      // Force header re-render
-      window.dispatchEvent(new CustomEvent('user-state-changed', { 
-        detail: { user: result.user, loggedIn: true } 
-      }));
-
-      return result.user;
 
     } else {
       throw new Error("Invalid user data format");
@@ -402,9 +419,8 @@ const App = () => {
     
     const errorMessage = typeof error === 'string' ? error : 
                         error.message || "Login failed. Please try again.";
-    toast.error(errorMessage);
     
-    throw error;
+    throw new Error(errorMessage);
   }
 };
 
