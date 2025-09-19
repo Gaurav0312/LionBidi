@@ -46,7 +46,7 @@ const productData = {
       { minQty: 30, discount: 20, label: "Buy 30+ pieces: Save ₹20 each" },
     ],
     inStock: true,
-    stockCount: 10000,
+    stockCount: 20000,
     description:
       "Experience the authentic natural taste with our Premium Special Lion Bidi (Big). Handcrafted with the finest tobacco leaves for the ultimate smoking experience. Each bidi is hand-rolled by skilled artisans, guaranteeing a consistent and impeccably crafted product.",
     images: [
@@ -160,43 +160,6 @@ const productData = {
   },
 };
 
-// Sample reviews data
-const reviewsData = [
-  {
-    id: 1,
-    user: "Rajesh Kumar",
-    rating: 5,
-    date: "2 days ago",
-    comment:
-      "Excellent quality! The taste is authentic and burns slowly. Worth every penny.",
-    verified: true,
-    helpful: 12,
-    isHelpful: false,
-  },
-  {
-    id: 2,
-    user: "Anil Singh",
-    rating: 4,
-    date: "5 days ago",
-    comment: "Good product, nice packaging. Fast delivery too. Recommended!",
-    verified: true,
-    helpful: 8,
-    isHelpful: false,
-  },
-  {
-    id: 3,
-    user: "Mohit Sharma",
-    rating: 5,
-    date: "1 week ago",
-    comment: "Best bidi I've tried. Premium quality at reasonable price.",
-    verified: false,
-    helpful: 6,
-    isHelpful: false,
-  },
-];
-
-// Updated similar products data with slugs
-
 const ProductDetailPage = () => {
   const { slug } = useParams(); // Get product slug from URL
   const navigate = useNavigate();
@@ -209,13 +172,11 @@ const ProductDetailPage = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
-  const [reviews, setReviews] = useState(reviewsData);
   const [showShareModal, setShowShareModal] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentProduct, setCurrentProduct] = useState(null);
-  //  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const similarProducts = React.useMemo(() => {
@@ -224,7 +185,7 @@ const ProductDetailPage = () => {
       .filter((p) => p.slug !== currentProduct.slug)
       .map((p) => ({
         ...p,
-        image: p.images?.[0] || "/placeholder-image.jpg", // ✅ pick first image
+        image: p.images?.[0] || "/placeholder-image.jpg",
       }));
   }, [currentProduct]);
 
@@ -350,16 +311,16 @@ const ProductDetailPage = () => {
         currentProduct.bulkPricing
       );
 
-      // Create product with bulk pricing applied - FIXED VERSION
+      // Create product with bulk pricing applied
       const productToAdd = {
         ...currentProduct,
-        _id: currentProduct.id, // Ensure consistent ID
+        _id: currentProduct.id,
         id: currentProduct.id,
-        price: currentProduct.price, // Use discounted price if applicable
+        price: currentProduct.price,
         discountPrice: currentProduct.price,
         originalPrice: currentProduct.originalPrice,
         image: currentProduct.images?.[0] || currentProduct.image,
-        // Remove React nodes from the product object
+        
         benefits: undefined,
         specifications: undefined,
         features: currentProduct.features?.filter((f) => typeof f === "string"),
@@ -367,7 +328,6 @@ const ProductDetailPage = () => {
 
       console.log("Adding to cart:", { product: productToAdd, quantity });
 
-      // ✅ FIXED: Add once with the correct quantity
       await addToCart(productToAdd, quantity, true);
 
       const message =
@@ -426,7 +386,7 @@ const ProductDetailPage = () => {
     navigate(-1); // Go back to previous page
   };
 
-  // Handle similar product click - CORRECTED to use slug
+  // Handle similar product click
   const handleSimilarProductClick = (productSlug) => {
     navigate(`/product/${productSlug}`);
   };
@@ -437,10 +397,10 @@ const ProductDetailPage = () => {
       return { price: basePrice, discount: 0, savings: 0 };
     }
 
-    // Find the applicable bulk discount (highest quantity threshold met)
+    // Find the applicable bulk discount
     const applicableDiscount = bulkPricing
       .filter((tier) => quantity >= tier.minQty)
-      .sort((a, b) => b.minQty - a.minQty)[0]; // Get highest threshold met
+      .sort((a, b) => b.minQty - a.minQty)[0];
 
     if (applicableDiscount) {
       const discountedPrice = basePrice - applicableDiscount.discount;
@@ -499,7 +459,7 @@ const ProductDetailPage = () => {
     navigate("/address", {
       state: {
         product: productToBuy,
-        fromBuyNow: true, // Optional flag to identify buy now flow
+        fromBuyNow: true,
       },
     });
   };
@@ -582,7 +542,7 @@ const ProductDetailPage = () => {
           >
             <button
               onClick={handleBack}
-              className="flex items-center space-x-2 hover:text-orange-600 mr-4 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-300 rounded"
+              className="flex items-center space-x-2 hover:text-orange-600 mr-2 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-300 rounded"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
@@ -600,10 +560,6 @@ const ProductDetailPage = () => {
             >
               Products
             </button>
-            <span className="mx-2">/</span>
-            <span className="hover:text-orange-600 cursor-pointer px-1">
-              Bidi
-            </span>
             <span className="mx-2">/</span>
             <span className="text-gray-900 font-medium px-1">
               {currentProduct.name}
@@ -701,12 +657,12 @@ const ProductDetailPage = () => {
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
                 {currentProduct.name}
               </h1>
 
               {/* Rating and Reviews */}
-              <div className="flex items-center space-x-4 mb-4">
+              {/* <div className="flex items-center space-x-4 mb-4">
                 <div
                   className="flex items-center space-x-1"
                   title={`${currentProduct.rating} out of 5`}
@@ -728,16 +684,16 @@ const ProductDetailPage = () => {
                 <div className="text-gray-500">
                   ({currentProduct.reviewCount || 127} reviews)
                 </div>
-              </div>
+              </div> */}
 
               {/* Price */}
               <div className="flex items-center space-x-3 mb-4">
-                <span className="text-3xl font-bold text-orange-600">
+                <span className="text-4xl font-bold text-divine-orange">
                   ₹{currentProduct.price}
                 </span>
                 {currentProduct.originalPrice && (
                   <>
-                    <span className="text-xl text-gray-400 line-through">
+                    <span className="text-2xl text-gray-400 line-through">
                       ₹{currentProduct.originalPrice}
                     </span>
                     <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-semibold">
