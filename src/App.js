@@ -761,7 +761,7 @@ const App = () => {
         });
 
         if (response.data.success) {
-          // Create a completely new array to force React re-render
+          
           const newWishlist = [...(response.data.wishlist || [])];
           console.log("Setting new wishlist state:", newWishlist);
 
