@@ -83,86 +83,69 @@ export const verifyAuth = createAsyncThunk(
 
 // FIXED: Login with better state management
 export const loginUser = createAsyncThunk(
-  "user/loginUser",
-  async (credentials, { dispatch, rejectWithValue, getState }) => {
+  'user/loginUser',
+  async (credentials, { dispatch, rejectWithValue }) => {
     try {
-      console.log("🔐 Redux: Starting login...", credentials.email);
+      console.log('🔥 Redux: Starting login...', credentials.email);
       
-      const response = await axios.post("/api/auth/login", credentials, {
+      const response = await axios.post('/api/auth/login', credentials, {
         withCredentials: true,
       });
 
-      console.log("🔐 Redux: Login response:", response.data);
-
+      console.log('🔥 Redux: Login response:', response.data);
       const data = response.data;
-      let user, token;
 
-      // Handle different response formats
-      if (data.success) {
-        user = data.user;
-        token = data.token;
-      } else if (data.user && data.token) {
+      // Validate response structure
+      if (!data.success) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      let user, token;
+      
+      if (data.user && data.token) {
         user = data.user;
         token = data.token;
       } else {
-        throw new Error(data.message || "Invalid login response");
+        throw new Error('Invalid login response format');
       }
 
-      // Validate required fields
-      if (!user || !token) {
-        throw new Error("Missing user data or token in response");
+      // Validate user object has required fields
+      if (!user || (!user.id && !user._id)) {
+        throw new Error('Invalid user data format - missing ID');
       }
 
-      if (!user.id && !user._id) {
-        throw new Error("User object missing ID field");
-      }
+      // Normalize user object
+      const normalizedUser = {
+        ...user,
+        id: user.id || user._id,
+        _id: user._id || user.id
+      };
 
-      // CRITICAL: Save to localStorage BEFORE returning
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", token);
+      // Save to localStorage
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      localStorage.setItem('token', token);
 
-      console.log("🔐 Redux: User data saved to localStorage");
+      console.log('🔥 Redux: User data saved successfully');
 
-      // Handle cart merging in background (don't let it fail login)
-      setTimeout(async () => {
-        try {
-          const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
-          if (guestCart.length > 0) {
-            console.log("🔐 Redux: Merging guest cart...");
-            dispatch(mergeCart(guestCart));
-            localStorage.removeItem("cart"); // Clear guest cart
-          } else {
-            dispatch(fetchCart());
-          }
-        } catch (cartError) {
-          console.error("🔐 Redux: Cart operation failed:", cartError);
-        }
-      }, 100);
-
-      // Return with timestamp to force updates
-      return { 
-        user: {
-          ...user,
-          _loginTime: Date.now()
-        }, 
+      return {
+        user: normalizedUser,
         token,
         timestamp: Date.now()
       };
+
     } catch (err) {
-      console.error("🔐 Redux: Login error:", err);
+      console.error('🔥 Redux: Login error:', err);
       
       // Clear any partial auth data
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
       
-      const errorMsg = 
-        err.response?.data?.message || 
-        err.message || 
-        "Login failed. Please try again.";
+      const errorMsg = err.response?.data?.message || err.message || 'Login failed. Please try again.';
       return rejectWithValue(errorMsg);
     }
   }
 );
+
 
 // FIXED: Register with consistent pattern
 export const registerUser = createAsyncThunk(
