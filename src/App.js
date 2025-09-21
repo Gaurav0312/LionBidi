@@ -61,7 +61,7 @@ import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import Layout from "./components/Layout";
 
 // Backend API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
 const BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
 
 const App = () => {
