@@ -1,5 +1,5 @@
 //LoginPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Mail,
   Lock,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SocialLogin from "../components/SocialLogin";
+import AppContext from "../context/AppContext";
 
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../store/userSlice";
@@ -19,6 +20,8 @@ import { mergeCart } from "../store/cartSlice"; // asyncThunk for merging
 
 const LoginPage = () => {
   const navigate = useNavigate();
+
+  const { login } = useContext(AppContext);
   const dispatch = useDispatch();
   const localCartItems = useSelector((state) => state.cart.items);
 
@@ -31,45 +34,42 @@ const LoginPage = () => {
     password: "",
   });
 
+  
   useEffect(() => {
-    // Handle OAuth redirect errors
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get("error");
-    const messageParam = urlParams.get("message");
-
-    if (errorParam) {
-      let errorMessage = "Login failed";
-
-      switch (errorParam) {
-        case "oauth_cancelled":
-          errorMessage = "Google login was cancelled";
-          break;
-        case "auth_failed":
-          errorMessage = messageParam
-            ? decodeURIComponent(messageParam)
-            : "Authentication failed";
-          break;
-        case "security_error":
-          errorMessage = "Security error occurred during login";
-          break;
-        case "no_authorization_code":
-          errorMessage = "Authorization failed - please try again";
-          break;
-        case "oauth_failed":
-          errorMessage = "Google login failed";
-          break;
-        default:
-          errorMessage = messageParam
-            ? decodeURIComponent(messageParam)
-            : "Login failed";
-      }
-
-      setError(errorMessage);
-
-      // Clear the URL parameters to prevent the error from persisting on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
+  // Handle OAuth redirect errors
+  const urlParams = new URLSearchParams(window.location.search);
+  const errorParam = urlParams.get('error');
+  const messageParam = urlParams.get('message');
+  
+  if (errorParam) {
+    let errorMessage = 'Login failed';
+    
+    switch (errorParam) {
+      case 'oauth_cancelled':
+        errorMessage = 'Google login was cancelled';
+        break;
+      case 'auth_failed':
+        errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Authentication failed';
+        break;
+      case 'security_error':
+        errorMessage = 'Security error occurred during login';
+        break;
+      case 'no_authorization_code':
+        errorMessage = 'Authorization failed - please try again';
+        break;
+      case 'oauth_failed':
+        errorMessage = 'Google login failed';
+        break;
+      default:
+        errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Login failed';
     }
-  }, []);
+    
+    setError(errorMessage);
+    
+    // Clear the URL parameters to prevent the error from persisting on refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}, []);
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -105,10 +105,10 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
+    setError('');
+    
     if (!validateForm()) return;
-
+    
     setLoading(true);
     try {
       const loginData = {
@@ -116,32 +116,22 @@ const LoginPage = () => {
         password: formData.password,
       };
 
-      // Use only Redux dispatch - remove duplicate API calls
-      const result = await dispatch(loginUser(loginData));
-
-      if (loginUser.fulfilled.match(result)) {
-        // Merge local cart with server cart if needed
-        if (localCartItems.length > 0) {
-          await dispatch(mergeCart(localCartItems));
-        }
-
-        // Success - navigate to home
-        navigate("/");
-      } else {
-        // Handle rejection
-        const errorMsg =
-          result.payload?.message ||
-          result.payload ||
-          "Login failed. Please check your credentials.";
-        setError(errorMsg);
-      }
+      console.log("Calling App.js login function with:", loginData);
+      
+      // This calls the login function from App.js contextValue
+      await login(loginData);
+      
+      console.log("Login successful, navigating home");
+      navigate('/');
     } catch (err) {
-      console.error("Login error:", err);
-      setError("Login failed. Please check your credentials.");
+      console.error('Login error:', err);
+      const errorMessage = err.message || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex flex-col">
