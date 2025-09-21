@@ -204,7 +204,7 @@ const MobileMenu = ({
                 className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
               />
             </div>
-            <h2 className="text-3xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-[#FF6B35]">
+            <h2 className="text-2xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-[#FF6B35]">
               LION BIDI
             </h2>
           </div>
