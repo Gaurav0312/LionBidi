@@ -132,6 +132,25 @@ const ProductCard = ({ product }) => {
     navigate(`/product/${product.slug}`);
   };
 
+
+  const heartStyles = {
+  inactive: {
+    color: 'rgb(156, 163, 175)',
+    fill: 'none',
+    stroke: 'rgb(156, 163, 175)',
+    strokeWidth: 2,
+    transition: 'all 0.2s ease-in-out'
+  },
+  active: {
+    color: 'rgb(239, 68, 68)',
+    fill: 'rgb(239, 68, 68)',
+    stroke: 'rgb(239, 68, 68)',
+    strokeWidth: 2,
+    transform: 'scale(1.05)',
+    transition: 'all 0.2s ease-in-out'
+  }
+};
+
   return (
     <div 
       className="group bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
@@ -170,7 +189,7 @@ const ProductCard = ({ product }) => {
         >
           <Heart
             size={16}
-            fill={isInWishlist ? "currentColor" : "none"}
+            fill={isInWishlist ? "red" : "none"}
             className={`transition-all duration-200 ${isInWishlist ? "text-white" : ""} ${
               isTogglingWishlist ? 'animate-pulse' : ''
             }`}
