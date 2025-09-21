@@ -313,74 +313,81 @@ const RegisterPage = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  if (step < 3) {
-    handleNextStep();
-    return;
-  }
-
-  // Final Registration with Email OTP
-  const emailOtpValue = emailOtp.join("");
-  if (emailOtpValue.length !== 6) {
-    setError("Please enter the complete 6-digit email verification code");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    // Prepare registration data
-    const registrationData = {
-      name: formData.name.trim(),
-      email: formData.email.toLowerCase().trim(),
-      phone: formData.phone,
-      password: formData.password,
-      emailOtp: emailOtpValue,
-      dateOfBirth: formData.dateOfBirth || null,
-      // Address data (optional)
-      address: formData.street
-        ? {
-            street: formData.street,
-            city: formData.city,
-            state: formData.state,
-            zipCode: formData.zipCode,
-            country: "India",
-          }
-        : null,
-    };
-
-    const response = await fetch(`${BASE_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(registrationData),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      console.log("Registration successful, response data:", data);
-
-      // Call login with the registration response data
-      // The login function will handle the { user: {...}, token: "..." } format
-      await login(data);
-
-      // Show success message and redirect
-      alert("Registration successful! Welcome to Lion Bidi!");
-      navigate("/");
-    } else {
-      setError(data.message || "Registration failed. Please try again.");
-      // Reset OTPs on failed registration
-      setEmailOtp(["", "", "", "", "", ""]);
+    if (step < 3) {
+      handleNextStep();
+      return;
     }
-  } catch (err) {
-    console.error("Registration error:", err);
-    setError(err.message || "Network error occurred. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+
+    // Final Registration with Email OTP
+    const emailOtpValue = emailOtp.join("");
+    if (emailOtpValue.length !== 6) {
+      setError("Please enter the complete 6-digit email verification code");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Prepare registration data
+      const registrationData = {
+        name: formData.name.trim(),
+        email: formData.email.toLowerCase().trim(),
+        phone: formData.phone,
+        password: formData.password,
+        emailOtp: emailOtpValue,
+        dateOfBirth: formData.dateOfBirth || null,
+        // Address data (optional)
+        address: formData.street
+          ? {
+              street: formData.street,
+              city: formData.city,
+              state: formData.state,
+              zipCode: formData.zipCode,
+              country: "India",
+            }
+          : null,
+      };
+
+      const response = await fetch(`${BASE_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registrationData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Registration successful, response data:", data);
+
+        // Call login with the registration response data
+        // The login function will handle the { user: {...}, token: "..." } format
+        try {
+          await login(data);
+          console.log("Auto-login after registration successful");
+          navigate("/");
+        } catch (loginError) {
+          console.error("Auto-login failed:", loginError);
+          // If auto-login fails, at least show success message and redirect to login
+          setError("Registration successful! Please log in manually.");
+          setTimeout(() => {
+            navigate("/login");
+          }, 2000);
+        }
+      } else {
+        setError(data.message || "Registration failed. Please try again.");
+        // Reset OTPs on failed registration
+        setEmailOtp(["", "", "", "", "", ""]);
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError(err.message || "Network error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     if (step > 1) {
