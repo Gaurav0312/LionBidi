@@ -5,20 +5,12 @@ import {
   ShoppingCart, 
   X, 
   Star, 
-  Filter, 
   Grid, 
   List, 
-  Package, 
-  Tag, 
-  TrendingUp, 
+  Package,
   Share2,
-  Eye,
-  MoreVertical,
-  ArrowUpDown,
   Search,
-  Plus,
   Trash2,
-  Edit3,
   Gift,
   Bell,
   AlertCircle,
@@ -58,7 +50,7 @@ const WishlistPage = () => {
         return { 
           inStock: true, 
           text: `Only ${product.stock} left`, 
-          className: 'text-orange-600 bg-orange-50 border-orange-200' 
+          className: 'text-divine-orange bg-orange-50 border-orange-200' 
         };
       }
       return { 
@@ -304,7 +296,7 @@ const WishlistPage = () => {
               <div className="space-y-6">
                 <button
                   onClick={() => window.location.href = '/products'}
-                  className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  className="inline-flex items-center gap-3 bg-[#FF6B35] hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
                   <Package className="h-5 w-5" />
                   Discover Products
@@ -357,13 +349,13 @@ const WishlistPage = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Title Section */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg">
+              <div className="flex items-center justify-center w-12 h-12 bg-[#FF6B35] rounded-xl shadow-lg">
                 <Heart className="h-6 w-6 text-white" fill="currentColor" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-slate-800">My Wishlist</h1>
                 <p className="text-slate-600">
-                  <span className="font-semibold text-orange-600">{filteredWishlist.length}</span> 
+                  <span className="font-semibold text-divine-orange">{filteredWishlist.length}</span> 
                   {filteredWishlist.length === 1 ? ' item' : ' items'}
                   {selectedItems.length > 0 && (
                     <span className="ml-2">• <span className="font-semibold">{selectedItems.length}</span> selected</span>
@@ -406,7 +398,7 @@ const WishlistPage = () => {
                   onClick={() => setViewMode('grid')}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                     viewMode === 'grid' 
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' 
+                      ? 'bg-[#FF6B35] text-white shadow-md' 
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -417,7 +409,7 @@ const WishlistPage = () => {
                   onClick={() => setViewMode('list')}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                     viewMode === 'list' 
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md' 
+                      ? 'bg-[#FF6B35] text-white shadow-md' 
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -608,7 +600,7 @@ const WishlistPage = () => {
                       disabled={!stockInfo.inStock}
                       className={`w-full py-3.5 font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
                         stockInfo.inStock
-                          ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                          ? "bg-[#FF6B35] hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                           : "bg-slate-200 text-slate-500 cursor-not-allowed"
                       }`}
                     >
@@ -727,7 +719,7 @@ const WishlistPage = () => {
                         disabled={!stockInfo.inStock}
                         className={`font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center gap-2 ${
                           stockInfo.inStock
-                            ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl"
+                            ? "bg-[#FF6B35] hover:from-orange-600 hover:to-amber-600 text-white shadow-lg hover:shadow-xl"
                             : "bg-slate-200 text-slate-500 cursor-not-allowed"
                         }`}
                       >
@@ -765,7 +757,7 @@ const WishlistPage = () => {
                 setFilterCategory('all');
                 setShowOnSaleOnly(false);
               }}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 bg-[#FF6B35] hover:from-orange-600 hover:to-amber-600 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               Clear Filters
             </button>
