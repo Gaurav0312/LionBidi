@@ -114,7 +114,6 @@ const LoginPage = () => {
       
       if (result) {
         console.log("Login successful!");
-        alert('Login successful! Welcome back to Lion Bidi!');
         navigate('/');
       }
     } catch (err) {
