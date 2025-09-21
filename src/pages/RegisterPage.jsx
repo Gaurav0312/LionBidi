@@ -1,3 +1,4 @@
+//RegisterPage.jsx
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
 import {
@@ -312,87 +313,74 @@ const RegisterPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (step < 3) {
-      handleNextStep();
-      return;
+  if (step < 3) {
+    handleNextStep();
+    return;
+  }
+
+  // Final Registration with Email OTP
+  const emailOtpValue = emailOtp.join("");
+  if (emailOtpValue.length !== 6) {
+    setError("Please enter the complete 6-digit email verification code");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // Prepare registration data
+    const registrationData = {
+      name: formData.name.trim(),
+      email: formData.email.toLowerCase().trim(),
+      phone: formData.phone,
+      password: formData.password,
+      emailOtp: emailOtpValue,
+      dateOfBirth: formData.dateOfBirth || null,
+      // Address data (optional)
+      address: formData.street
+        ? {
+            street: formData.street,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode,
+            country: "India",
+          }
+        : null,
+    };
+
+    const response = await fetch(`${BASE_URL}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(registrationData),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log("Registration successful, response data:", data);
+
+      // Call login with the registration response data
+      // The login function will handle the { user: {...}, token: "..." } format
+      await login(data);
+
+      // Show success message and redirect
+      alert("Registration successful! Welcome to Lion Bidi!");
+      navigate("/");
+    } else {
+      setError(data.message || "Registration failed. Please try again.");
+      // Reset OTPs on failed registration
+      setEmailOtp(["", "", "", "", "", ""]);
     }
-
-    // Final Registration with Email OTP
-    const emailOtpValue = emailOtp.join("");
-    if (emailOtpValue.length !== 6) {
-      setError("Please enter the complete 6-digit email verification code");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Prepare registration data
-      const registrationData = {
-        name: formData.name.trim(),
-        email: formData.email.toLowerCase().trim(),
-        phone: formData.phone,
-        password: formData.password,
-        emailOtp: emailOtpValue,
-        dateOfBirth: formData.dateOfBirth || null,
-        // Address data (optional)
-        address: formData.street
-          ? {
-              street: formData.street,
-              city: formData.city,
-              state: formData.state,
-              zipCode: formData.zipCode,
-              country: "India",
-            }
-          : null,
-      };
-
-      const response = await fetch(`${BASE_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(registrationData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store token
-        localStorage.setItem("token", data.token);
-
-        // Update app context with user data
-        login({
-          id: data.user._id || data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          phone: data.user.phone,
-          isAdmin: data.user.isAdmin || data.user.role === "admin",
-          role: data.user.role,
-          avatar: data.user.avatar,
-          isEmailVerified: data.user.isEmailVerified,
-          isPhoneVerified: data.user.isPhoneVerified,
-          addresses: data.user.addresses,
-          wishlist: data.user.wishlist,
-          cartItemsCount: 0,
-        });
-
-        // Show success message and redirect
-        alert("Registration successful! Welcome to Lion Bidi!");
-        navigate("/");
-      } else {
-        setError(data.message || "Registration failed. Please try again.");
-        // Reset OTPs on failed registration
-        setEmailOtp(["", "", "", "", "", ""]);
-      }
-    } catch (err) {
-      console.error("Registration error:", err);
-      setError("Network error occurred. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    console.error("Registration error:", err);
+    setError(err.message || "Network error occurred. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleBack = () => {
     if (step > 1) {
