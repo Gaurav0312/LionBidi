@@ -170,7 +170,7 @@ const App = () => {
         error.response?.data || error
       );
       if (error.response?.status !== 401) {
-        
+        // toast.error("Failed to load wishlist from server");
       }
     }
   };
@@ -351,15 +351,22 @@ const App = () => {
         });
 
         const data = await response.json();
+        console.log("Login API response:", data);
 
         if (!response.ok) {
           throw new Error(data.message || "Login failed");
         }
 
-        // Store token
+        // Check if the response has the expected structure
+        if (!data.success || !data.user || !data.token) {
+          console.error("Invalid login response structure:", data);
+          throw new Error("Invalid server response");
+        }
+
+        // Store token first
         localStorage.setItem("token", data.token);
 
-        // Create user object from API response
+        // Create user object from API response with consistent format
         const newUserData = {
           id: data.user._id || data.user.id,
           _id: data.user._id || data.user.id,
@@ -367,16 +374,21 @@ const App = () => {
           email: data.user.email,
           phone: data.user.phone,
           isAdmin: data.user.isAdmin || data.user.role === "admin",
-          role: data.user.role,
+          role: data.user.role || "customer",
           avatar: data.user.avatar,
           isEmailVerified: data.user.isEmailVerified,
           isPhoneVerified: data.user.isPhoneVerified,
-          addresses: data.user.addresses,
-          wishlist: data.user.wishlist,
+          addresses: data.user.addresses || [],
+          wishlist: data.user.wishlist || [],
           token: data.token,
           _loginTimestamp: Date.now(),
-          _forceUpdate: Math.random().toString(36),
         };
+
+        // Validate that we have the required fields
+        if (!newUserData.id || !newUserData.email) {
+          console.error("Missing required user fields:", newUserData);
+          throw new Error("Invalid user data received from server");
+        }
 
         // Update both local and Redux state
         setUser(newUserData);
@@ -390,14 +402,14 @@ const App = () => {
           })
         ).catch((err) => console.log("Redux login error (non-critical):", err));
 
-        console.log("User state updated to:", newUserData);
+        console.log("User state updated successfully:", newUserData);
 
         // Handle guest data merging
         await handleGuestDataMerging();
 
         return newUserData;
       }
-      // Check if this is already authenticated user data (from registration or OAuth)
+      // Handle registration/OAuth data formats
       else if (
         userData.token &&
         userData.email &&
@@ -426,24 +438,21 @@ const App = () => {
           wishlist: userData.wishlist || [],
           token: userData.token,
           _loginTimestamp: Date.now(),
-          _forceUpdate: Math.random().toString(36),
         };
 
-        // Update both local and Redux state
+        // Update states
         setUser(newUserData);
         localStorage.setItem("user", JSON.stringify(newUserData));
-
-        // Also update Redux state for consistency
         dispatch(refreshUserState());
 
-        console.log("User state updated to:", newUserData);
+        console.log("User state updated successfully:", newUserData);
 
         // Handle guest data merging
         await handleGuestDataMerging();
 
         return newUserData;
       }
-      // Check if this is user data from backend (registration response format)
+      // Handle registration response format { user: {...}, token: "..." }
       else if (userData.user && userData.token) {
         console.log("Processing registration response format...");
 
@@ -467,17 +476,14 @@ const App = () => {
           wishlist: user.wishlist || [],
           token: userData.token,
           _loginTimestamp: Date.now(),
-          _forceUpdate: Math.random().toString(36),
         };
 
-        // Update both local and Redux state
+        // Update states
         setUser(newUserData);
         localStorage.setItem("user", JSON.stringify(newUserData));
-
-        // Also update Redux state for consistency
         dispatch(refreshUserState());
 
-        console.log("User state updated to:", newUserData);
+        console.log("User state updated successfully:", newUserData);
 
         // Handle guest data merging
         await handleGuestDataMerging();
