@@ -31,42 +31,45 @@ const LoginPage = () => {
     password: "",
   });
 
-  
   useEffect(() => {
-  // Handle OAuth redirect errors
-  const urlParams = new URLSearchParams(window.location.search);
-  const errorParam = urlParams.get('error');
-  const messageParam = urlParams.get('message');
-  
-  if (errorParam) {
-    let errorMessage = 'Login failed';
-    
-    switch (errorParam) {
-      case 'oauth_cancelled':
-        errorMessage = 'Google login was cancelled';
-        break;
-      case 'auth_failed':
-        errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Authentication failed';
-        break;
-      case 'security_error':
-        errorMessage = 'Security error occurred during login';
-        break;
-      case 'no_authorization_code':
-        errorMessage = 'Authorization failed - please try again';
-        break;
-      case 'oauth_failed':
-        errorMessage = 'Google login failed';
-        break;
-      default:
-        errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Login failed';
+    // Handle OAuth redirect errors
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get("error");
+    const messageParam = urlParams.get("message");
+
+    if (errorParam) {
+      let errorMessage = "Login failed";
+
+      switch (errorParam) {
+        case "oauth_cancelled":
+          errorMessage = "Google login was cancelled";
+          break;
+        case "auth_failed":
+          errorMessage = messageParam
+            ? decodeURIComponent(messageParam)
+            : "Authentication failed";
+          break;
+        case "security_error":
+          errorMessage = "Security error occurred during login";
+          break;
+        case "no_authorization_code":
+          errorMessage = "Authorization failed - please try again";
+          break;
+        case "oauth_failed":
+          errorMessage = "Google login failed";
+          break;
+        default:
+          errorMessage = messageParam
+            ? decodeURIComponent(messageParam)
+            : "Login failed";
+      }
+
+      setError(errorMessage);
+
+      // Clear the URL parameters to prevent the error from persisting on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
-    setError(errorMessage);
-    
-    // Clear the URL parameters to prevent the error from persisting on refresh
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-}, []);
+  }, []);
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -101,41 +104,44 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  
-  if (!validateForm()) return;
-  
-  setLoading(true);
-  try {
-    const loginData = {
-      email: formData.email.toLowerCase().trim(),
-      password: formData.password,
-    };
+    e.preventDefault();
+    setError("");
 
-    // Remove .unwrap() - let Redux handle the state
-    const result = await dispatch(loginUser(loginData));
-    
-    if (loginUser.fulfilled.match(result)) {
-      // Merge local cart with server cart
-      if (localCartItems.length > 0) {
-        await dispatch(mergeCart(localCartItems));
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const loginData = {
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+      };
+
+      // Use only Redux dispatch - remove duplicate API calls
+      const result = await dispatch(loginUser(loginData));
+
+      if (loginUser.fulfilled.match(result)) {
+        // Merge local cart with server cart if needed
+        if (localCartItems.length > 0) {
+          await dispatch(mergeCart(localCartItems));
+        }
+
+        // Success - navigate to home
+        navigate("/");
+      } else {
+        // Handle rejection
+        const errorMsg =
+          result.payload?.message ||
+          result.payload ||
+          "Login failed. Please check your credentials.";
+        setError(errorMsg);
       }
-      
-      alert('Login successful! Welcome back to Lion Bidi!');
-      navigate('/');
-    } else {
-      // Handle rejection
-      setError(result.payload || 'Login failed. Please check your credentials.');
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error('Login error:', err);
-    setError('Login failed. Please check your credentials.');
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex flex-col">
