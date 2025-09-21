@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 const AdminProtectedRoute = ({ children }) => {
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [loading, setLoading] = useState(true);
 
