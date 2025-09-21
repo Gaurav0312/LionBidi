@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { Star, ThumbsUp, MessageCircle } from "lucide-react";
 import ReviewForm from "./ReviewForm";
-import api, { BASE_URL } from "../utils/api"; // Import your API utility
 
 const ReviewsSection = ({ productId, currentUser }) => {
   const [reviews, setReviews] = useState([]);
@@ -12,7 +11,7 @@ const ReviewsSection = ({ productId, currentUser }) => {
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
   const [error, setError] = useState(null);
-  const [votingStates, setVotingStates] = useState({}); // Track voting states per review
+  const [votingStates, setVotingStates] = useState({});
 
   useEffect(() => {
     if (productId) {
@@ -27,398 +26,388 @@ const ReviewsSection = ({ productId, currentUser }) => {
     }
 
     try {
-      setError(null);
       setLoading(true);
+      setError(null);
+      console.log("Fetching reviews for product:", productId);
 
-      console.log(`🔍 Fetching reviews for product: ${productId}`);
-      console.log(`🌐 API URL: ${BASE_URL}/api/reviews/product/${productId}`);
+      // Get token from localStorage for authentication
+      const token = localStorage.getItem("token");
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-      // Use your API utility instead of direct fetch
-      const response = await api.get(`/api/reviews/product/${productId}`);
+      const response = await fetch(`https://lion-bidi-backend.onrender.com/api/reviews/product/${productId}`, {
+        method: 'GET',
+        headers: headers,
+      });
 
-      console.log("✅ Reviews API Response:", response.data);
+      const data = await response.json();
+      console.log("Reviews API response:", data);
 
-      const data = response.data;
-
-      // Validate and set data with proper fallbacks
-      setReviews(Array.isArray(data.reviews) ? data.reviews : []);
-      setRatingDistribution(
-        Array.isArray(data.ratingDistribution) ? data.ratingDistribution : []
-      );
-      setTotalReviews(
-        typeof data.totalReviews === "number" ? data.totalReviews : 0
-      );
-
-      // Calculate average rating
-      if (
-        Array.isArray(data.ratingDistribution) &&
-        data.ratingDistribution.length > 0 &&
-        data.totalReviews > 0
-      ) {
-        const totalRating = data.ratingDistribution.reduce((sum, item) => {
-          if (
-            item &&
-            typeof item._id === "number" &&
-            typeof item.count === "number"
-          ) {
-            return sum + item._id * item.count;
-          }
-          return sum;
-        }, 0);
-        setAverageRating(
-          Math.round((totalRating / data.totalReviews) * 10) / 10
-        );
+      if (data.success) {
+        setReviews(data.reviews || []);
+        setTotalReviews(data.totalReviews || 0);
+        setRatingDistribution(data.ratingDistribution || []);
+        
+        // Calculate average rating
+        if (data.ratingDistribution && data.ratingDistribution.length > 0) {
+          const totalVotes = data.ratingDistribution.reduce((sum, item) => sum + item.count, 0);
+          const weightedSum = data.ratingDistribution.reduce((sum, item) => sum + (item._id * item.count), 0);
+          const avgRating = totalVotes > 0 ? weightedSum / totalVotes : 0;
+          setAverageRating(Math.round(avgRating * 10) / 10);
+        } else {
+          setAverageRating(0);
+        }
       } else {
+        console.error("Failed to fetch reviews:", data.message);
+        setError(data.message || "Failed to fetch reviews");
+        setReviews([]);
+        setTotalReviews(0);
+        setRatingDistribution([]);
         setAverageRating(0);
       }
     } catch (error) {
-      console.error("❌ Error fetching reviews:", error);
-
-      // Handle 404 as "no reviews yet" instead of an error
-      if (error.response?.status === 404) {
-        console.log(
-          "📝 No reviews found for this product - this is normal for new products"
-        );
-        setError(null); // Don't show error for 404
-        setReviews([]);
-        setRatingDistribution([]);
-        setTotalReviews(0);
-        setAverageRating(0);
-      } else if (error.response?.status >= 500) {
-        setError("Server error. Please try again later.");
-        setReviews([]);
-        setRatingDistribution([]);
-        setTotalReviews(0);
-        setAverageRating(0);
-      } else if (error.code === "NETWORK_ERROR") {
-        setError("Network error. Please check your connection.");
-        setReviews([]);
-        setRatingDistribution([]);
-        setTotalReviews(0);
-        setAverageRating(0);
-      } else {
-        setError(error.response?.data?.message || "Failed to load reviews");
-        setReviews([]);
-        setRatingDistribution([]);
-        setTotalReviews(0);
-        setAverageRating(0);
-      }
+      console.error("Error fetching reviews:", error);
+      setError("Error loading reviews. Please try again.");
+      setReviews([]);
+      setTotalReviews(0);
+      setRatingDistribution([]);
+      setAverageRating(0);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmitReview = async (reviewData) => {
-    if (!currentUser) {
-      alert("You must be logged in to submit a review");
-      return;
-    }
-
+  const handleReviewSubmit = async (reviewData) => {
     try {
-      console.log("📝 Submitting review:", reviewData);
+      console.log("Submitting review:", reviewData);
+      
+      // Get user data from localStorage or props
+      const savedUser = localStorage.getItem("user");
+      const userFromStorage = savedUser ? JSON.parse(savedUser) : null;
+      const currentUserData = currentUser || userFromStorage;
 
-      const response = await api.post("/api/reviews", {
+      // Prepare the request body with user data
+      const requestBody = {
         ...reviewData,
-        productId,
-        currentUser: {
-          _id: currentUser._id || currentUser.id,
-          name: currentUser.name || currentUser.displayName,
-          email: currentUser.email,
-          profileImage: currentUser.profileImage || currentUser.avatar,
-        },
+        productId: productId,
+        // Send currentUser in the body for compatibility with backend
+        currentUser: currentUserData ? {
+          _id: currentUserData.id || currentUserData._id,
+          name: currentUserData.name,
+          email: currentUserData.email,
+          profileImage: currentUserData.avatar || currentUserData.profileImage
+        } : null
+      };
+
+      console.log("Request body:", requestBody);
+
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`https://lion-bidi-backend.onrender.com/api/reviews`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(requestBody),
       });
 
-      console.log("✅ Review submitted:", response.data);
+      const data = await response.json();
+      console.log("Review submission response:", data);
 
-      setShowReviewForm(false);
-
-      // Refresh reviews after successful submission
-      setTimeout(async () => {
+      if (data.success) {
+        // Add new review to the list
+        setReviews(prev => [data.review, ...prev]);
+        setTotalReviews(prev => prev + 1);
+        setShowReviewForm(false);
+        
+        // Refresh reviews to get updated stats
         await fetchReviews();
-      }, 500);
-
-      alert("Review submitted successfully!");
+      } else {
+        throw new Error(data.message || 'Failed to submit review');
+      }
     } catch (error) {
-      console.error("❌ Error submitting review:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.errors?.join(", ") ||
-        "Failed to submit review";
-      alert(errorMessage);
+      console.error("Error submitting review:", error);
+      throw error; // Let ReviewForm handle the error display
     }
   };
 
-  const handleHelpfulClick = async (reviewId) => {
-    if (!currentUser) {
-      alert("You must be logged in to vote");
-      return;
-    }
-
-    // Prevent multiple clicks while processing
-    if (votingStates[reviewId]) {
-      return;
-    }
+  const handleVoteToggle = async (reviewId) => {
+    if (votingStates[reviewId]) return; // Prevent multiple clicks
 
     try {
-      setVotingStates((prev) => ({ ...prev, [reviewId]: true }));
-      console.log(`Toggling helpful vote for review ${reviewId}`);
+      setVotingStates(prev => ({ ...prev, [reviewId]: true }));
 
-      const response = await api.post(`/api/reviews/${reviewId}/helpful`);
+      // Get user data
+      const savedUser = localStorage.getItem("user");
+      const userFromStorage = savedUser ? JSON.parse(savedUser) : null;
+      const currentUserData = currentUser || userFromStorage;
 
-      console.log("Helpful vote response:", response.data);
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-      // Update the local review data with the response
-      setReviews((prevReviews) =>
-        prevReviews.map((review) =>
-          review._id === reviewId
-            ? {
-                ...review,
-                helpfulVotes: response.data.helpfulVotes,
-                hasUserVoted: response.data.hasVoted,
-              }
+      const response = await fetch(`https://lion-bidi-backend.onrender.com/api/reviews/${reviewId}/helpful`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          // Send currentUser in the body for compatibility with backend
+          currentUser: currentUserData ? {
+            _id: currentUserData.id || currentUserData._id,
+            name: currentUserData.name,
+            email: currentUserData.email
+          } : null
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update the review in the list
+        setReviews(prev => prev.map(review => 
+          review._id === reviewId 
+            ? { ...review, helpfulVotes: data.helpfulVotes, hasUserVoted: data.hasVoted }
             : review
-        )
-      );
+        ));
+      } else {
+        console.error("Failed to toggle vote:", data.message);
+      }
     } catch (error) {
-      console.error("Error updating helpful vote:", error);
-      const errorMessage =
-        error.response?.data?.message || "Failed to update vote";
-      alert(errorMessage);
+      console.error("Error toggling vote:", error);
     } finally {
-      setVotingStates((prev) => ({ ...prev, [reviewId]: false }));
+      setVotingStates(prev => ({ ...prev, [reviewId]: false }));
     }
   };
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading reviews...</p>
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+          <span className="ml-2 text-gray-600">Loading reviews...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-600 mb-4">Error loading reviews: {error}</p>
-        <button
-          onClick={fetchReviews}
-          className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          Retry
-        </button>
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="text-center py-8">
+          <div className="text-red-600 mb-4">
+            <MessageCircle className="w-16 h-16 mx-auto mb-2 opacity-50" />
+            <p className="text-lg font-medium">Error loading reviews</p>
+            <p className="text-sm text-gray-500 mt-1">{error}</p>
+          </div>
+          <button
+            onClick={fetchReviews}
+            className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
+  // Get current user data
+  const savedUser = localStorage.getItem("user");
+  const userFromStorage = savedUser ? JSON.parse(savedUser) : null;
+  const currentUserData = currentUser || userFromStorage;
+
   return (
-    <div className="max-w-4xl space-y-6">
-      {/* Reviews Summary */}
-      <div className="bg-white p-8 rounded-2xl border border-gray-200">
+    <div className="bg-white rounded-xl shadow-sm">
+      {/* Reviews Header */}
+      <div className="p-6 border-b border-gray-100">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-gray-900">Customer Reviews</h3>
-          {currentUser && !showReviewForm && (
+          {currentUserData && (
             <button
               onClick={() => setShowReviewForm(true)}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-full font-medium transition-colors"
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
             >
               Write a Review
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-orange-600 mb-2">
-              {averageRating > 0 ? averageRating : "N/A"}
+        {/* Rating Summary */}
+        {totalReviews > 0 ? (
+          <div className="flex items-center space-x-8">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-gray-900">{averageRating}</div>
+              <div className="flex items-center justify-center mt-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-5 h-5 ${
+                      i < Math.floor(averageRating)
+                        ? "text-yellow-400 fill-current"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                {totalReviews} review{totalReviews !== 1 ? 's' : ''}
+              </div>
             </div>
-            <div className="flex justify-center mb-2">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-5 h-5 ${
-                    i < Math.floor(averageRating)
-                      ? "text-yellow-400 fill-current"
-                      : "text-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="text-gray-600">
-              Based on {totalReviews}{" "}
-              {totalReviews === 1 ? "review" : "reviews"}
-            </div>
-          </div>
 
-          <div className="md:col-span-2">
-            {[5, 4, 3, 2, 1].map((stars) => {
-              const ratingData = Array.isArray(ratingDistribution)
-                ? ratingDistribution.find((r) => r && r._id === stars)
-                : null;
-              const count = ratingData ? ratingData.count : 0;
-              const percentage =
-                totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
+            {/* Rating Distribution */}
+            <div className="flex-1 max-w-md">
+              {[5, 4, 3, 2, 1].map((rating) => {
+                const ratingData = ratingDistribution.find(r => r._id === rating);
+                const count = ratingData ? ratingData.count : 0;
+                const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
 
-              return (
-                <div key={stars} className="flex items-center space-x-3 mb-2">
-                  <span className="text-sm font-medium w-8">{stars}★</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-orange-400 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
+                return (
+                  <div key={rating} className="flex items-center space-x-2 mb-1">
+                    <span className="text-sm font-medium w-3">{rating}</span>
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-yellow-400 h-2 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-gray-500 w-8">{count}</span>
                   </div>
-                  <span className="text-sm text-gray-600 w-12">
-                    {percentage}%
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
+            <p className="text-lg">No reviews yet</p>
+            <p className="text-sm mt-1">Be the first to review this product!</p>
+          </div>
+        )}
       </div>
 
       {/* Review Form */}
       {showReviewForm && (
-        <ReviewForm
-          productId={productId}
-          onSubmit={handleSubmitReview}
-          onCancel={() => setShowReviewForm(false)}
-        />
+        <div className="border-b border-gray-100">
+          <ReviewForm
+            productId={productId}
+            onSubmit={handleReviewSubmit}
+            onCancel={() => setShowReviewForm(false)}
+          />
+        </div>
       )}
 
-      {/* Individual Reviews */}
-      <div className="space-y-4">
-        {!Array.isArray(reviews) || reviews.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No reviews yet. Be the first to review this product!
-          </div>
-        ) : (
-          reviews.map((review) => {
-            if (!review || !review._id) {
-              return null;
-            }
+      {/* Reviews List */}
+      {reviews.length > 0 && (
+        <div className="p-6">
+          <div className="space-y-6">
+            {reviews.map((review) => (
+              <div key={review._id} className="border-b border-gray-100 pb-6 last:border-b-0">
+                <div className="flex items-start space-x-4">
+                  {/* User Avatar */}
+                  <img
+                    src={review.userId?.profileImage || review.userProfileImage || review.userAvatar}
+                    alt={review.userId?.name || review.userName}
+                    className="w-12 h-12 rounded-full object-cover bg-gray-200"
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.userId?.name || review.userName || 'User')}&background=ff6b35&color=fff&size=100`;
+                    }}
+                  />
 
-            return (
-              <div
-                key={review._id}
-                className="bg-white p-6 rounded-xl border border-gray-200"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-r from-orange-400 to-red-500">
-                      {review.userId?.profileImage ? (
-                        <img
-                          src={review.userId.profileImage}
-                          alt={review.userId?.name || "User"}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Hide broken image and show fallback
-                            e.target.style.display = "none";
-                            e.target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-bold">${
-                              review.userId?.name
-                                ? review.userId.name.charAt(0).toUpperCase()
-                                : "U"
-                            }</div>`;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white font-bold">
-                          {review.userId?.name
-                            ? review.userId.name.charAt(0).toUpperCase()
-                            : "U"}
-                        </div>
+                  {/* Review Content */}
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {review.userId?.name || review.userName}
+                      </h4>
+                      {review.isVerifiedPurchase && (
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          Verified Purchase
+                        </span>
                       )}
                     </div>
-                    <div>
-                      <div className="font-semibold text-gray-900 flex items-center">
-                        {review.userId?.name || "Anonymous User"}
-                        {review.isVerifiedPurchase && (
-                          <span className="ml-2 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs">
-                            Verified Purchase
-                          </span>
-                        )}
+
+                    {/* Rating */}
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < review.rating
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < (review.rating || 0)
-                                  ? "text-yellow-400 fill-current"
-                                  : "text-gray-300"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-gray-500 text-sm">
-                          {review.createdAt
-                            ? new Date(review.createdAt).toLocaleDateString()
-                            : "Date not available"}
+                      <span className="text-sm text-gray-500">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Review Title */}
+                    <h5 className="font-semibold text-gray-900 mb-2">{review.title}</h5>
+
+                    {/* Review Comment */}
+                    <p className="text-gray-700 mb-3">{review.comment}</p>
+
+                    {/* Review Images */}
+                    {review.images && review.images.length > 0 && (
+                      <div className="flex space-x-2 mb-3">
+                        {review.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`Review image ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              console.log("View full image:", image);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Helpful Vote Button */}
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => handleVoteToggle(review._id)}
+                        disabled={votingStates[review._id]}
+                        className={`flex items-center space-x-2 text-sm transition-colors ${
+                          review.hasUserVoted
+                            ? "text-orange-600"
+                            : "text-gray-500 hover:text-orange-600"
+                        } ${votingStates[review._id] ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <ThumbsUp className="w-4 h-4" />
+                        <span>
+                          Helpful ({review.helpfulVotes || 0})
                         </span>
-                      </div>
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                {review.title && (
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    {review.title}
-                  </h4>
-                )}
-
-                <p className="text-gray-700 mb-4">
-                  {review.comment || "No comment provided"}
-                </p>
-
-                {/* Review Images */}
-                {Array.isArray(review.images) && review.images.length > 0 && (
-                  <div className="flex space-x-2 mb-4">
-                    {review.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`Review ${index + 1}`}
-                        className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                        onClick={() => {
-                          /* Open image modal */
-                        }}
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => handleHelpfulClick(review._id)}
-                    disabled={!currentUser || votingStates[review._id]}
-                    className={`flex items-center space-x-1 transition-colors disabled:opacity-50 ${
-                      review.hasUserVoted
-                        ? "text-green-600"
-                        : "text-gray-600 hover:text-green-600"
-                    }`}
-                  >
-                    <ThumbsUp
-                      className={`w-4 h-4 ${
-                        review.hasUserVoted ? "fill-current" : ""
-                      }`}
-                    />
-                    <span className="text-sm">
-                      {review.hasUserVoted ? "Helpful" : "Helpful"} (
-                      {review.helpfulVotes || 0})
-                    </span>
-                  </button>
-                </div>
               </div>
-            );
-          })
-        )}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
