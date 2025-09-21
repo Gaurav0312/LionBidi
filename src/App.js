@@ -9,8 +9,13 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { selectUser, selectIsLoggedIn, logoutUser,loginUser as loginUserRedux, 
-  refreshUserState  } from "./store/userSlice";
+import {
+  selectUser,
+  selectIsLoggedIn,
+  logoutUser,
+  loginUser as loginUserRedux,
+  refreshUserState,
+} from "./store/userSlice";
 
 import {
   fetchWishlist,
@@ -61,8 +66,10 @@ import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import Layout from "./components/Layout";
 
 // Backend API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
-const BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
+const BASE_URL =
+  process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
 
 const App = () => {
   const navigate = useNavigate();
@@ -163,7 +170,7 @@ const App = () => {
         error.response?.data || error
       );
       if (error.response?.status !== 401) {
-        // toast.error("Failed to load wishlist from server");
+        
       }
     }
   };
@@ -253,234 +260,249 @@ const App = () => {
   }, [reduxWishlistItems]);
 
   const handleGuestDataMerging = async () => {
-  try {
-    const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
-    const guestWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+    try {
+      const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
+      const guestWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
 
-    console.log("Guest data - Cart:", guestCart.length, "Wishlist:", guestWishlist.length);
+      console.log(
+        "Guest data - Cart:",
+        guestCart.length,
+        "Wishlist:",
+        guestWishlist.length
+      );
 
-    // Handle cart merging
-    if (guestCart.length > 0) {
-      try {
-        const response = await api.post("/api/cart/merge", {
-          items: guestCart,
-        });
-        if (response.data.success) {
-          localStorage.removeItem("cart");
-          await fetchCartFromServer();
-          console.log("Cart merged successfully");
+      // Handle cart merging
+      if (guestCart.length > 0) {
+        try {
+          const response = await api.post("/api/cart/merge", {
+            items: guestCart,
+          });
+          if (response.data.success) {
+            localStorage.removeItem("cart");
+            await fetchCartFromServer();
+            console.log("Cart merged successfully");
+          }
+        } catch (error) {
+          console.error("Error merging cart:", error);
+          // Don't fail login for cart merge errors
         }
-      } catch (error) {
-        console.error("Error merging cart:", error);
-        // Don't fail login for cart merge errors
       }
-    }
 
-    // Handle wishlist merging
-    if (guestWishlist.length > 0) {
-      try {
-        const response = await api.post("/api/wishlist/merge", {
-          items: guestWishlist,
-        });
-        if (response.data.success) {
-          localStorage.removeItem("wishlist");
-          await fetchWishlistFromServer();
-          console.log("Wishlist merged successfully");
+      // Handle wishlist merging
+      if (guestWishlist.length > 0) {
+        try {
+          const response = await api.post("/api/wishlist/merge", {
+            items: guestWishlist,
+          });
+          if (response.data.success) {
+            localStorage.removeItem("wishlist");
+            await fetchWishlistFromServer();
+            console.log("Wishlist merged successfully");
+          }
+        } catch (error) {
+          console.error("Error merging wishlist:", error);
+          // Don't fail login for wishlist merge errors
         }
-      } catch (error) {
-        console.error("Error merging wishlist:", error);
-        // Don't fail login for wishlist merge errors
       }
-    }
 
-    // Fetch fresh data if no guest data to merge
-    if (guestCart.length === 0) {
-      await fetchCartFromServer();
-    }
-    if (guestWishlist.length === 0) {
-      await fetchWishlistFromServer();
-    }
-    
-    // Always fetch user address
-    await fetchUserAddress();
+      // Fetch fresh data if no guest data to merge
+      if (guestCart.length === 0) {
+        await fetchCartFromServer();
+      }
+      if (guestWishlist.length === 0) {
+        await fetchWishlistFromServer();
+      }
 
-  } catch (error) {
-    console.error("Error in guest data merging:", error);
-    // Don't fail login for data merging errors
-  }
-};
+      // Always fetch user address
+      await fetchUserAddress();
+    } catch (error) {
+      console.error("Error in guest data merging:", error);
+      // Don't fail login for data merging errors
+    }
+  };
 
   /* ═══════════════════════════ AUTH HELPERS ═══════════════════════════ */
   // In App.js - Update your login function
   // Fixed login function in App.js
-const login = async (userData) => {
-  console.log("=== LOGIN FUNCTION CALLED ===");
-  console.log("User data received:", userData);
+  const login = async (userData) => {
+    console.log("=== LOGIN FUNCTION CALLED ===");
+    console.log("User data received:", userData);
 
-  try {
-    // Check if this is login credentials (email + password) - no token present
-    if (userData.email && userData.password && !userData.token && !userData._id) {
-      console.log("Processing login credentials via API...");
-      
-      const response = await fetch(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          email: userData.email.toLowerCase().trim(),
-          password: userData.password,
-        }),
-      });
+    try {
+      // Check if this is login credentials (email + password) - no token present
+      if (
+        userData.email &&
+        userData.password &&
+        !userData.token &&
+        !userData._id
+      ) {
+        console.log("Processing login credentials via API...");
 
-      const data = await response.json();
+        const response = await fetch(`${BASE_URL}/api/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            email: userData.email.toLowerCase().trim(),
+            password: userData.password,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Login failed");
+        }
+
+        // Store token
+        localStorage.setItem("token", data.token);
+
+        // Create user object from API response
+        const newUserData = {
+          id: data.user._id || data.user.id,
+          _id: data.user._id || data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          phone: data.user.phone,
+          isAdmin: data.user.isAdmin || data.user.role === "admin",
+          role: data.user.role,
+          avatar: data.user.avatar,
+          isEmailVerified: data.user.isEmailVerified,
+          isPhoneVerified: data.user.isPhoneVerified,
+          addresses: data.user.addresses,
+          wishlist: data.user.wishlist,
+          token: data.token,
+          _loginTimestamp: Date.now(),
+          _forceUpdate: Math.random().toString(36),
+        };
+
+        // Update both local and Redux state
+        setUser(newUserData);
+        localStorage.setItem("user", JSON.stringify(newUserData));
+
+        // Also update Redux state for consistency
+        dispatch(
+          loginUserRedux({
+            email: userData.email,
+            password: userData.password,
+          })
+        ).catch((err) => console.log("Redux login error (non-critical):", err));
+
+        console.log("User state updated to:", newUserData);
+
+        // Handle guest data merging
+        await handleGuestDataMerging();
+
+        return newUserData;
       }
+      // Check if this is already authenticated user data (from registration or OAuth)
+      else if (
+        userData.token &&
+        userData.email &&
+        (userData._id || userData.id)
+      ) {
+        console.log(
+          "Processing authenticated user data from registration/OAuth..."
+        );
 
-      // Store token
-      localStorage.setItem("token", data.token);
-      
-      // Create user object from API response
-      const newUserData = {
-        id: data.user._id || data.user.id,
-        _id: data.user._id || data.user.id,
-        name: data.user.name,
-        email: data.user.email,
-        phone: data.user.phone,
-        isAdmin: data.user.isAdmin || data.user.role === "admin",
-        role: data.user.role,
-        avatar: data.user.avatar,
-        isEmailVerified: data.user.isEmailVerified,
-        isPhoneVerified: data.user.isPhoneVerified,
-        addresses: data.user.addresses,
-        wishlist: data.user.wishlist,
-        token: data.token,
-        _loginTimestamp: Date.now(),
-        _forceUpdate: Math.random().toString(36),
-      };
+        // Store token first
+        localStorage.setItem("token", userData.token);
 
-      // Update both local and Redux state
-      setUser(newUserData);
-      localStorage.setItem("user", JSON.stringify(newUserData));
-      
-      // Also update Redux state for consistency
-      dispatch(loginUserRedux({
-        email: userData.email,
-        password: userData.password
-      })).catch(err => console.log("Redux login error (non-critical):", err));
+        // Create user object with consistent format
+        const newUserData = {
+          id: userData._id || userData.id,
+          _id: userData._id || userData.id,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          isAdmin: userData.isAdmin || userData.role === "admin",
+          role: userData.role || "customer",
+          avatar: userData.avatar,
+          isEmailVerified: userData.isEmailVerified,
+          isPhoneVerified: userData.isPhoneVerified,
+          addresses: userData.addresses || [],
+          wishlist: userData.wishlist || [],
+          token: userData.token,
+          _loginTimestamp: Date.now(),
+          _forceUpdate: Math.random().toString(36),
+        };
 
-      console.log("User state updated to:", newUserData);
+        // Update both local and Redux state
+        setUser(newUserData);
+        localStorage.setItem("user", JSON.stringify(newUserData));
 
-      // Handle guest data merging
-      await handleGuestDataMerging();
-      
-      return newUserData;
+        // Also update Redux state for consistency
+        dispatch(refreshUserState());
 
-    } 
-    // Check if this is already authenticated user data (from registration or OAuth)
-    else if (userData.token && userData.email && (userData._id || userData.id)) {
-      console.log("Processing authenticated user data from registration/OAuth...");
-      
-      // Store token first
-      localStorage.setItem("token", userData.token);
-      
-      // Create user object with consistent format
-      const newUserData = {
-        id: userData._id || userData.id,
-        _id: userData._id || userData.id,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        isAdmin: userData.isAdmin || userData.role === "admin",
-        role: userData.role || "customer",
-        avatar: userData.avatar,
-        isEmailVerified: userData.isEmailVerified,
-        isPhoneVerified: userData.isPhoneVerified,
-        addresses: userData.addresses || [],
-        wishlist: userData.wishlist || [],
-        token: userData.token,
-        _loginTimestamp: Date.now(),
-        _forceUpdate: Math.random().toString(36),
-      };
+        console.log("User state updated to:", newUserData);
 
-      // Update both local and Redux state
-      setUser(newUserData);
-      localStorage.setItem("user", JSON.stringify(newUserData));
-      
-      // Also update Redux state for consistency
-      dispatch(refreshUserState());
+        // Handle guest data merging
+        await handleGuestDataMerging();
 
-      console.log("User state updated to:", newUserData);
+        return newUserData;
+      }
+      // Check if this is user data from backend (registration response format)
+      else if (userData.user && userData.token) {
+        console.log("Processing registration response format...");
 
-      // Handle guest data merging
-      await handleGuestDataMerging();
+        // Store token first
+        localStorage.setItem("token", userData.token);
 
-      return newUserData;
+        // Create user object from nested user data
+        const user = userData.user;
+        const newUserData = {
+          id: user._id || user.id,
+          _id: user._id || user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          isAdmin: user.isAdmin || user.role === "admin",
+          role: user.role || "customer",
+          avatar: user.avatar,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          addresses: user.addresses || [],
+          wishlist: user.wishlist || [],
+          token: userData.token,
+          _loginTimestamp: Date.now(),
+          _forceUpdate: Math.random().toString(36),
+        };
 
-    } 
-    // Check if this is user data from backend (registration response format)
-    else if (userData.user && userData.token) {
-      console.log("Processing registration response format...");
-      
-      // Store token first
-      localStorage.setItem("token", userData.token);
-      
-      // Create user object from nested user data
-      const user = userData.user;
-      const newUserData = {
-        id: user._id || user.id,
-        _id: user._id || user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        isAdmin: user.isAdmin || user.role === "admin",
-        role: user.role || "customer",
-        avatar: user.avatar,
-        isEmailVerified: user.isEmailVerified,
-        isPhoneVerified: user.isPhoneVerified,
-        addresses: user.addresses || [],
-        wishlist: user.wishlist || [],
-        token: userData.token,
-        _loginTimestamp: Date.now(),
-        _forceUpdate: Math.random().toString(36),
-      };
+        // Update both local and Redux state
+        setUser(newUserData);
+        localStorage.setItem("user", JSON.stringify(newUserData));
 
-      // Update both local and Redux state
-      setUser(newUserData);
-      localStorage.setItem("user", JSON.stringify(newUserData));
-      
-      // Also update Redux state for consistency
-      dispatch(refreshUserState());
+        // Also update Redux state for consistency
+        dispatch(refreshUserState());
 
-      console.log("User state updated to:", newUserData);
+        console.log("User state updated to:", newUserData);
 
-      // Handle guest data merging
-      await handleGuestDataMerging();
+        // Handle guest data merging
+        await handleGuestDataMerging();
 
-      return newUserData;
+        return newUserData;
+      } else {
+        console.error("Invalid user data format received:", userData);
+        throw new Error("Invalid user data format - missing required fields");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
 
-    } else {
-      console.error("Invalid user data format received:", userData);
-      throw new Error("Invalid user data format - missing required fields");
+      // Clear any partial auth data
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+
+      const errorMessage =
+        typeof error === "string"
+          ? error
+          : error.message || "Login failed. Please try again.";
+
+      throw new Error(errorMessage);
     }
-
-  } catch (error) {
-    console.error("Login failed:", error);
-    
-    // Clear any partial auth data
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setUser(null);
-    
-    const errorMessage = typeof error === 'string' ? error : 
-                        error.message || "Login failed. Please try again.";
-    
-    throw new Error(errorMessage);
-  }
-};
+  };
 
   // Update logout function
   const logout = async () => {
