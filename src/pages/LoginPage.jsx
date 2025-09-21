@@ -1,5 +1,5 @@
 //LoginPage.jsx
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Mail,
   Lock,
@@ -11,19 +11,19 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SocialLogin from "../components/SocialLogin";
-import AppContext from "../context/AppContext";
+import { useAppContext } from "../context/AppContext"; // Import the context hook
 
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../store/userSlice";
-// your thunk (NOT asyncThunk)
-import { mergeCart } from "../store/cartSlice"; // asyncThunk for merging
+import { mergeCart } from "../store/cartSlice";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-
-  const { login } = useContext(AppContext);
   const dispatch = useDispatch();
   const localCartItems = useSelector((state) => state.cart.items);
+  
+  // Get the login function from context
+  const { login } = useAppContext();
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,42 +34,41 @@ const LoginPage = () => {
     password: "",
   });
 
-  
   useEffect(() => {
-  // Handle OAuth redirect errors
-  const urlParams = new URLSearchParams(window.location.search);
-  const errorParam = urlParams.get('error');
-  const messageParam = urlParams.get('message');
-  
-  if (errorParam) {
-    let errorMessage = 'Login failed';
+    // Handle OAuth redirect errors
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    const messageParam = urlParams.get('message');
     
-    switch (errorParam) {
-      case 'oauth_cancelled':
-        errorMessage = 'Google login was cancelled';
-        break;
-      case 'auth_failed':
-        errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Authentication failed';
-        break;
-      case 'security_error':
-        errorMessage = 'Security error occurred during login';
-        break;
-      case 'no_authorization_code':
-        errorMessage = 'Authorization failed - please try again';
-        break;
-      case 'oauth_failed':
-        errorMessage = 'Google login failed';
-        break;
-      default:
-        errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Login failed';
+    if (errorParam) {
+      let errorMessage = 'Login failed';
+      
+      switch (errorParam) {
+        case 'oauth_cancelled':
+          errorMessage = 'Google login was cancelled';
+          break;
+        case 'auth_failed':
+          errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Authentication failed';
+          break;
+        case 'security_error':
+          errorMessage = 'Security error occurred during login';
+          break;
+        case 'no_authorization_code':
+          errorMessage = 'Authorization failed - please try again';
+          break;
+        case 'oauth_failed':
+          errorMessage = 'Google login failed';
+          break;
+        default:
+          errorMessage = messageParam ? decodeURIComponent(messageParam) : 'Login failed';
+      }
+      
+      setError(errorMessage);
+      
+      // Clear the URL parameters to prevent the error from persisting on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
-    setError(errorMessage);
-    
-    // Clear the URL parameters to prevent the error from persisting on refresh
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-}, []);
+  }, []);
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -110,28 +109,52 @@ const LoginPage = () => {
     if (!validateForm()) return;
     
     setLoading(true);
+    
     try {
       const loginData = {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       };
 
-      console.log("Calling App.js login function with:", loginData);
+      console.log('Attempting login with:', { email: loginData.email });
+
+      // Use the App context login function
+      const result = await login(loginData);
       
-      // This calls the login function from App.js contextValue
-      await login(loginData);
+      console.log('Login successful:', result);
+
+      // Merge local cart with server cart if user has items in local cart
+      if (localCartItems.length > 0) {
+        try {
+          await dispatch(mergeCart(localCartItems));
+        } catch (cartError) {
+          console.log('Cart merge error (non-critical):', cartError);
+        }
+      }
       
-      console.log("Login successful, navigating home");
+      // Show success message
+      alert('Login successful! Welcome back to Lion Bidi!');
+      
+      // Navigate to home page
       navigate('/');
-    } catch (err) {
-      console.error('Login error:', err);
-      const errorMessage = err.message || 'Login failed. Please check your credentials.';
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Set the error message for display
+      const errorMessage = error.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
+      
+      // Clear password field on error
+      setFormData(prev => ({
+        ...prev,
+        password: ''
+      }));
+      
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex flex-col">
