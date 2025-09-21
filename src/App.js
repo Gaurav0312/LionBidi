@@ -312,13 +312,14 @@ const App = () => {
 
   /* ═══════════════════════════ AUTH HELPERS ═══════════════════════════ */
   // In App.js - Update your login function
-  const login = async (userData) => {
+  // Fixed login function in App.js
+const login = async (userData) => {
   console.log("=== LOGIN FUNCTION CALLED ===");
   console.log("User data received:", userData);
 
   try {
-    // Check if this is login credentials (email + password)
-    if (userData.email && userData.password && !userData.token) {
+    // Check if this is login credentials (email + password) - no token present
+    if (userData.email && userData.password && !userData.token && !userData._id) {
       console.log("Processing login credentials via API...");
       
       const response = await fetch(`${BASE_URL}/api/auth/login`, {
@@ -342,9 +343,10 @@ const App = () => {
       // Store token
       localStorage.setItem("token", data.token);
       
-      // Create user object
+      // Create user object from API response
       const newUserData = {
         id: data.user._id || data.user.id,
+        _id: data.user._id || data.user.id,
         name: data.user.name,
         email: data.user.email,
         phone: data.user.phone,
@@ -377,16 +379,71 @@ const App = () => {
       
       return newUserData;
 
-    } else if (userData.token && userData.email) {
-      // This is already authenticated user data (from OAuth, etc.)
-      console.log("Processing authenticated user data...");
+    } 
+    // Check if this is already authenticated user data (from registration or OAuth)
+    else if (userData.token && userData.email && (userData._id || userData.id)) {
+      console.log("Processing authenticated user data from registration/OAuth...");
       
       // Store token first
       localStorage.setItem("token", userData.token);
       
-      // Create user object with force-update fields
+      // Create user object with consistent format
       const newUserData = {
-        ...userData,
+        id: userData._id || userData.id,
+        _id: userData._id || userData.id,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        isAdmin: userData.isAdmin || userData.role === "admin",
+        role: userData.role || "customer",
+        avatar: userData.avatar,
+        isEmailVerified: userData.isEmailVerified,
+        isPhoneVerified: userData.isPhoneVerified,
+        addresses: userData.addresses || [],
+        wishlist: userData.wishlist || [],
+        token: userData.token,
+        _loginTimestamp: Date.now(),
+        _forceUpdate: Math.random().toString(36),
+      };
+
+      // Update both local and Redux state
+      setUser(newUserData);
+      localStorage.setItem("user", JSON.stringify(newUserData));
+      
+      // Also update Redux state for consistency
+      dispatch(refreshUserState());
+
+      console.log("User state updated to:", newUserData);
+
+      // Handle guest data merging
+      await handleGuestDataMerging();
+
+      return newUserData;
+
+    } 
+    // Check if this is user data from backend (registration response format)
+    else if (userData.user && userData.token) {
+      console.log("Processing registration response format...");
+      
+      // Store token first
+      localStorage.setItem("token", userData.token);
+      
+      // Create user object from nested user data
+      const user = userData.user;
+      const newUserData = {
+        id: user._id || user.id,
+        _id: user._id || user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        isAdmin: user.isAdmin || user.role === "admin",
+        role: user.role || "customer",
+        avatar: user.avatar,
+        isEmailVerified: user.isEmailVerified,
+        isPhoneVerified: user.isPhoneVerified,
+        addresses: user.addresses || [],
+        wishlist: user.wishlist || [],
+        token: userData.token,
         _loginTimestamp: Date.now(),
         _forceUpdate: Math.random().toString(36),
       };
@@ -406,7 +463,8 @@ const App = () => {
       return newUserData;
 
     } else {
-      throw new Error("Invalid user data format");
+      console.error("Invalid user data format received:", userData);
+      throw new Error("Invalid user data format - missing required fields");
     }
 
   } catch (error) {
