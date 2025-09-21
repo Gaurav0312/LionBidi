@@ -1,4 +1,4 @@
-//LoginPage.jsx
+// Simplified LoginPage.jsx - Remove all Redux imports and calls
 import React, { useState, useEffect } from "react";
 import {
   Mail,
@@ -10,20 +10,12 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAppContext } from "../context/AppContext"; // Only use App Context
 import SocialLogin from "../components/SocialLogin";
-import { useAppContext } from "../context/AppContext"; // Import the context hook
-
-import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "../store/userSlice";
-import { mergeCart } from "../store/cartSlice";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const localCartItems = useSelector((state) => state.cart.items);
-  
-  // Get the login function from context
-  const { login } = useAppContext();
+  const { login } = useAppContext(); // Get login from App Context only
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -109,48 +101,25 @@ const LoginPage = () => {
     if (!validateForm()) return;
     
     setLoading(true);
-    
     try {
       const loginData = {
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       };
 
-      console.log('Attempting login with:', { email: loginData.email });
+      console.log("Attempting login with:", loginData);
 
-      // Use the App context login function
+      // Use ONLY the App Context login function
       const result = await login(loginData);
       
-      console.log('Login successful:', result);
-
-      // Merge local cart with server cart if user has items in local cart
-      if (localCartItems.length > 0) {
-        try {
-          await dispatch(mergeCart(localCartItems));
-        } catch (cartError) {
-          console.log('Cart merge error (non-critical):', cartError);
-        }
+      if (result) {
+        console.log("Login successful!");
+        alert('Login successful! Welcome back to Lion Bidi!');
+        navigate('/');
       }
-      
-      // Show success message
-      alert('Login successful! Welcome back to Lion Bidi!');
-      
-      // Navigate to home page
-      navigate('/');
-      
-    } catch (error) {
-      console.error('Login error:', error);
-      
-      // Set the error message for display
-      const errorMessage = error.message || 'Login failed. Please check your credentials.';
-      setError(errorMessage);
-      
-      // Clear password field on error
-      setFormData(prev => ({
-        ...prev,
-        password: ''
-      }));
-      
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }

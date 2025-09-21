@@ -8,23 +8,6 @@ import {
   useLocation,
 } from "react-router-dom";
 import axios from "axios";
-import { useSelector, useDispatch } from "react-redux";
-import {
-  selectUser,
-  selectIsLoggedIn,
-  logoutUser,
-  loginUser as loginUserRedux,
-  refreshUserState,
-} from "./store/userSlice";
-
-import {
-  fetchWishlist,
-  saveWishlist,
-  mergeWishlist,
-  addToWishlist as addToWishlistRedux,
-  removeFromWishlist as removeFromWishlistRedux,
-  toggleWishlist as toggleWishlistRedux,
-} from "./store/wishlistSlice";
 
 import api from "./utils/api";
 import AppContext from "./context/AppContext";
@@ -73,14 +56,6 @@ const BASE_URL =
 
 const App = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const dispatch = useDispatch();
-
-  // Redux state
-  const reduxUser = useSelector(selectUser);
-  const reduxIsLoggedIn = useSelector(selectIsLoggedIn);
-  const reduxCartItems = useSelector((state) => state.cart.items);
-  const reduxWishlistItems = useSelector((state) => state.wishlist.items);
 
   /* ═══════════════════════════ LOCAL STATE ═══════════════════════════ */
   const [user, setUser] = useState(null);
@@ -116,7 +91,7 @@ const App = () => {
 
   /* ═══ Fetch cart from server ═══ */
   const fetchCartFromServer = async () => {
-    if (!user && !reduxIsLoggedIn) return;
+    if (!user) return;
     try {
       const response = await api.get("/api/cart");
       if (response.data.success) {
@@ -132,7 +107,7 @@ const App = () => {
   };
 
   const fetchUserAddress = async () => {
-    if (!user && !reduxIsLoggedIn) return;
+    if (!user) return;
 
     try {
       const response = await api.get("/api/address");
@@ -146,7 +121,7 @@ const App = () => {
 
   /* ═══ Fetch wishlist from server ═══ */
   const fetchWishlistFromServer = async () => {
-    if (!user && !reduxIsLoggedIn) return;
+    if (!user) return;
     try {
       console.log("Fetching wishlist from server...");
       const response = await api.get("/api/wishlist");
@@ -226,38 +201,13 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       console.log("User logged in, fetching data from server...");
       fetchCartFromServer();
       fetchWishlistFromServer();
-      fetchUserAddress(); // Add this line
+      fetchUserAddress();
     }
-  }, [user, reduxIsLoggedIn]);
-
-  // Sync Redux state with local state
-  useEffect(() => {
-    if (reduxUser && !user) {
-      setUser(reduxUser);
-    } else if (!reduxUser && user) {
-      setUser(null);
-      setCartItems([]);
-      setWishlist([]);
-    }
-  }, [reduxUser, user]);
-
-  // Sync Redux cart with local cart state
-  useEffect(() => {
-    if (reduxCartItems.length > 0) {
-      setCartItems(reduxCartItems);
-    }
-  }, [reduxCartItems]);
-
-  // Sync Redux wishlist with local wishlist state
-  useEffect(() => {
-    if (reduxWishlistItems.length > 0) {
-      setWishlist(reduxWishlistItems);
-    }
-  }, [reduxWishlistItems]);
+  }, [user]);
 
   const handleGuestDataMerging = async () => {
     try {
@@ -322,19 +272,18 @@ const App = () => {
   };
 
   /* ═══════════════════════════ AUTH HELPERS ═══════════════════════════ */
-  // In App.js - Update your login function
-  // Fixed login function in App.js
   const login = async (userData) => {
     console.log("=== LOGIN FUNCTION CALLED ===");
     console.log("User data received:", userData);
 
     try {
-      // Check if this is login credentials (email + password) - no token present
+      // Case 1: Manual login with email + password (no token, no _id)
       if (
         userData.email &&
         userData.password &&
         !userData.token &&
-        !userData._id
+        !userData._id &&
+        !userData.user
       ) {
         console.log("Processing login credentials via API...");
 
@@ -351,22 +300,15 @@ const App = () => {
         });
 
         const data = await response.json();
-        console.log("Login API response:", data);
 
         if (!response.ok) {
           throw new Error(data.message || "Login failed");
         }
 
-        // Check if the response has the expected structure
-        if (!data.success || !data.user || !data.token) {
-          console.error("Invalid login response structure:", data);
-          throw new Error("Invalid server response");
-        }
-
-        // Store token first
+        // Store token
         localStorage.setItem("token", data.token);
 
-        // Create user object from API response with consistent format
+        // Create user object from API response
         const newUserData = {
           id: data.user._id || data.user.id,
           _id: data.user._id || data.user.id,
@@ -382,84 +324,29 @@ const App = () => {
           wishlist: data.user.wishlist || [],
           token: data.token,
           _loginTimestamp: Date.now(),
+          _forceUpdate: Math.random().toString(36),
         };
 
-        // Validate that we have the required fields
-        if (!newUserData.id || !newUserData.email) {
-          console.error("Missing required user fields:", newUserData);
-          throw new Error("Invalid user data received from server");
-        }
-
-        // Update both local and Redux state
+        // Update only local state (NO REDUX)
         setUser(newUserData);
         localStorage.setItem("user", JSON.stringify(newUserData));
 
-        // Also update Redux state for consistency
-        dispatch(
-          loginUserRedux({
-            email: userData.email,
-            password: userData.password,
-          })
-        ).catch((err) => console.log("Redux login error (non-critical):", err));
-
-        console.log("User state updated successfully:", newUserData);
-
-        // Handle guest data merging
-        await handleGuestDataMerging();
-
-        return newUserData;
-      }
-      // Handle registration/OAuth data formats
-      else if (
-        userData.token &&
-        userData.email &&
-        (userData._id || userData.id)
-      ) {
         console.log(
-          "Processing authenticated user data from registration/OAuth..."
+          "Manual login successful, user state updated:",
+          newUserData
         );
 
-        // Store token first
-        localStorage.setItem("token", userData.token);
-
-        // Create user object with consistent format
-        const newUserData = {
-          id: userData._id || userData.id,
-          _id: userData._id || userData.id,
-          name: userData.name,
-          email: userData.email,
-          phone: userData.phone,
-          isAdmin: userData.isAdmin || userData.role === "admin",
-          role: userData.role || "customer",
-          avatar: userData.avatar,
-          isEmailVerified: userData.isEmailVerified,
-          isPhoneVerified: userData.isPhoneVerified,
-          addresses: userData.addresses || [],
-          wishlist: userData.wishlist || [],
-          token: userData.token,
-          _loginTimestamp: Date.now(),
-        };
-
-        // Update states
-        setUser(newUserData);
-        localStorage.setItem("user", JSON.stringify(newUserData));
-        dispatch(refreshUserState());
-
-        console.log("User state updated successfully:", newUserData);
-
         // Handle guest data merging
         await handleGuestDataMerging();
 
         return newUserData;
       }
-      // Handle registration response format { user: {...}, token: "..." }
+      // Case 2: Registration response format { user: {...}, token: "..." }
       else if (userData.user && userData.token) {
         console.log("Processing registration response format...");
 
-        // Store token first
         localStorage.setItem("token", userData.token);
 
-        // Create user object from nested user data
         const user = userData.user;
         const newUserData = {
           id: user._id || user.id,
@@ -476,18 +363,56 @@ const App = () => {
           wishlist: user.wishlist || [],
           token: userData.token,
           _loginTimestamp: Date.now(),
+          _forceUpdate: Math.random().toString(36),
         };
 
-        // Update states
+        // Update only local state (NO REDUX)
         setUser(newUserData);
         localStorage.setItem("user", JSON.stringify(newUserData));
-        dispatch(refreshUserState());
 
-        console.log("User state updated successfully:", newUserData);
+        console.log(
+          "Registration login successful, user state updated:",
+          newUserData
+        );
 
-        // Handle guest data merging
         await handleGuestDataMerging();
+        return newUserData;
+      }
+      // Case 3: OAuth or already authenticated user data { token: "...", email: "...", _id: "..." }
+      else if (
+        userData.token &&
+        userData.email &&
+        (userData._id || userData.id)
+      ) {
+        console.log("Processing OAuth/authenticated user data...");
 
+        localStorage.setItem("token", userData.token);
+
+        const newUserData = {
+          id: userData._id || userData.id,
+          _id: userData._id || userData.id,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          isAdmin: userData.isAdmin || userData.role === "admin",
+          role: userData.role || "customer",
+          avatar: userData.avatar,
+          isEmailVerified: userData.isEmailVerified,
+          isPhoneVerified: userData.isPhoneVerified,
+          addresses: userData.addresses || [],
+          wishlist: userData.wishlist || [],
+          token: userData.token,
+          _loginTimestamp: Date.now(),
+          _forceUpdate: Math.random().toString(36),
+        };
+
+        // Update only local state (NO REDUX)
+        setUser(newUserData);
+        localStorage.setItem("user", JSON.stringify(newUserData));
+
+        console.log("OAuth login successful, user state updated:", newUserData);
+
+        await handleGuestDataMerging();
         return newUserData;
       } else {
         console.error("Invalid user data format received:", userData);
@@ -513,20 +438,34 @@ const App = () => {
   // Update logout function
   const logout = async () => {
     try {
-      await dispatch(logoutUser()).unwrap();
+      console.log("Logging out user...");
+
+      // Clear local storage
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      localStorage.removeItem("cart"); // Optional: clear guest cart too
+      localStorage.removeItem("wishlist"); // Optional: clear guest wishlist too
+
+      // Clear local state
+      setUser(null);
+      setCartItems([]);
+      setWishlist([]);
+      setUserAddress(null);
+
+      console.log("Logout completed successfully");
+      toast.success("Logged out successfully");
+
+      // Navigate to home page
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
+      //toast.error("Error during logout");
     }
-
-    setUser(null);
-    setCartItems([]);
-    setWishlist([]);
-    toast.success("Logged out successfully");
   };
 
   /* ═══════════════════════════ CART HELPERS ═══════════════════════════ */
   const addToCart = async (product, quantity = 1) => {
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         const productId = product._id || product.id;
         console.log("Adding to server cart - Product ID:", productId);
@@ -599,7 +538,7 @@ const App = () => {
       return removeFromCart(id);
     }
 
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         console.log("📡 Making API call to update cart quantity");
         const response = await api.put(`/api/cart/update/${id}`, {
@@ -630,7 +569,7 @@ const App = () => {
   const updateCartQuantity = async (id, qty) => {
     if (qty <= 0) return removeFromCart(id);
 
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         const response = await api.put(`/api/cart/update/${id}`, {
           quantity: qty,
@@ -655,7 +594,7 @@ const App = () => {
   };
 
   const removeFromCart = async (id) => {
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         const response = await api.delete(`/api/cart/remove/${id}`);
 
@@ -680,7 +619,7 @@ const App = () => {
 
   // Update clearCart
   const clearCart = async () => {
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         await api.delete("/api/cart/clear");
         setCartItems([]);
@@ -713,7 +652,7 @@ const App = () => {
 
   /* ═══════════════════════════ WISHLIST HELPERS ═══════════════════════════ */
   const addToWishlist = async (product) => {
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         const productId = product._id || product.id;
         console.log("Adding to server wishlist - Product ID:", productId);
@@ -766,7 +705,7 @@ const App = () => {
   };
 
   const removeFromWishlist = async (id) => {
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         const response = await api.delete(`/api/wishlist/remove/${id}`);
 
@@ -802,9 +741,9 @@ const App = () => {
     console.log("Product Name:", product.name);
     console.log("Current wishlist state:", wishlist);
     console.log("Is in wishlist:", isInWishlist);
-    console.log("User logged in:", !!(user || reduxIsLoggedIn));
+    console.log("User logged in:", !!user);
 
-    if (user || reduxIsLoggedIn) {
+    if (user) {
       try {
         console.log("Making API call to toggle wishlist...");
 
@@ -832,17 +771,6 @@ const App = () => {
           setTimeout(() => {
             console.log("Wishlist state after update:", wishlist);
           }, 100);
-
-          // Optional Redux dispatch
-          try {
-            if (response.data.action === "added") {
-              dispatch(addToWishlistRedux(product));
-            } else {
-              dispatch(removeFromWishlistRedux(productId));
-            }
-          } catch (reduxError) {
-            console.log("Redux dispatch error (non-critical):", reduxError);
-          }
         } else {
           console.error("API call unsuccessful:", response.data.message);
         }
@@ -896,7 +824,7 @@ const App = () => {
 
   /* ═══════════════════════════ CONTEXT VALUE ═══════════════════════════ */
   const contextValue = {
-    user: user || reduxUser,
+    user: user,
     cartItems,
     wishlist,
     userAddress,
@@ -909,7 +837,7 @@ const App = () => {
 
     addToCart,
     updateCartQuantity,
-    updateCartItemQuantity: updateCartQuantity,
+    updateCartItemQuantity: updateCartItemQuantity,
     removeFromCart,
     clearCart,
     getCartTotal,
@@ -941,16 +869,6 @@ const App = () => {
           <Route path="/register" element={<RegisterPage />} />
 
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route
-            path="/address"
-            element={
-              user || reduxIsLoggedIn ? (
-                <AddressPage />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
 
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
@@ -1005,44 +923,26 @@ const App = () => {
             {/* ✅ Add Orders Route */}
             <Route
               path="/orders"
-              element={
-                user || reduxIsLoggedIn ? (
-                  <OrdersPage />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
+              element={user ? <OrdersPage /> : <Navigate to="/login" replace />}
             />
 
             <Route
               path="/orders/:orderId/track"
               element={
-                user || reduxIsLoggedIn ? (
-                  <OrderTrackingPage />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
+                user ? <OrderTrackingPage /> : <Navigate to="/login" replace />
               }
             />
 
             <Route
               path="/wishlist"
               element={
-                user || reduxIsLoggedIn ? (
-                  <WishlistPage />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
+                user ? <WishlistPage /> : <Navigate to="/login" replace />
               }
             />
             <Route
               path="/profile"
               element={
-                user || reduxIsLoggedIn ? (
-                  <Profile user={user || reduxUser} />
-                ) : (
-                  <Navigate to="/login" />
-                )
+                user ? <Profile user={user} /> : <Navigate to="/login" />
               }
             />
             <Route path="/refund-policy" element={<RefundPolicy />} />
