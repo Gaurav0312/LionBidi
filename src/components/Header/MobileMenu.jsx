@@ -1,6 +1,7 @@
 //MobileMenu.jsx
 import React, { useEffect, useCallback, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   Crown,
@@ -22,6 +23,7 @@ import {
   Star,
   Zap,
   MapPin,
+  Edit3,
 } from "lucide-react";
 
 const MobileMenu = ({
@@ -29,7 +31,7 @@ const MobileMenu = ({
   onClose,
   user: propUser,
   userAddress,
-  handleNavigate,
+  handleNavigate: propHandleNavigate,
   handleLogout,
   openAuthModal,
   wishlist = [],
@@ -40,8 +42,9 @@ const MobileMenu = ({
   setIsCartOpen,
   setIsMenuOpen,
 }) => {
-  // Get user from context
+  // Get user from context and navigation hook
   const { user: contextUser } = useAppContext();
+  const navigate = useNavigate();
 
   // Use context user first, fallback to prop
   const user = contextUser || propUser;
@@ -49,23 +52,35 @@ const MobileMenu = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
 
+  // Use React Router navigate if no custom handler is provided
+  const handleNavigate = useCallback((path) => {
+    console.log("MobileMenu handleNavigate called with path:", path);
+    
+    try {
+      if (propHandleNavigate && typeof propHandleNavigate === 'function') {
+        console.log("Using prop handleNavigate");
+        propHandleNavigate(path);
+      } else {
+        console.log("Using React Router navigate");
+        navigate(path);
+      }
+      
+      // Close menu after navigation
+      if (onClose) {
+        onClose();
+      }
+    } catch (error) {
+      console.error("Navigation error:", error);
+      // Fallback navigation
+      window.location.href = path;
+    }
+  }, [propHandleNavigate, navigate, onClose]);
+
   // Force re-render when user changes
   useEffect(() => {
     console.log("MobileMenu - user updated:", user);
-    console.log("MobileMenu - user email:", user?.email);
-    console.log("MobileMenu - user name:", user?.name);
-
-    // Force a re-render by updating a state value
     setForceUpdate((prev) => prev + 1);
   }, [user, contextUser, propUser]);
-
-  // Also watch for context user specifically
-  useEffect(() => {
-    if (contextUser) {
-      console.log("MobileMenu - context user updated:", contextUser);
-      setForceUpdate((prev) => prev + 1);
-    }
-  }, [contextUser]);
 
   // Configuration objects
   const navigationItems = useMemo(
@@ -77,7 +92,7 @@ const MobileMenu = ({
         icon: Package,
         desc: "Browse our catalog",
       },
-      { path: "/orders", label: "Orders", icon: ShoppingCart },
+      { path: "/orders", label: "Orders", icon: ShoppingCart, desc: "View your orders" },
       { path: "/about", label: "About", icon: Info, desc: "Learn our story" },
       { path: "/contact", label: "Contact", icon: Phone, desc: "Get in touch" },
     ],
@@ -123,20 +138,33 @@ const MobileMenu = ({
     (path) => {
       console.log("handleNavigateAndClose called with path:", path);
       handleNavigate(path);
-      onClose();
     },
-    [handleNavigate, onClose]
+    [handleNavigate]
   );
 
   const handleCartOpen = useCallback(() => {
-    setIsCartOpen(true);
-    onClose();
+    if (setIsCartOpen) {
+      setIsCartOpen(true);
+    }
+    if (onClose) {
+      onClose();
+    }
   }, [setIsCartOpen, onClose]);
 
   const handleLogoutAndClose = useCallback(() => {
-    handleLogout();
-    onClose();
+    if (handleLogout) {
+      handleLogout();
+    }
+    if (onClose) {
+      onClose();
+    }
   }, [handleLogout, onClose]);
+
+  // Handle edit address specifically
+  const handleEditAddress = useCallback(() => {
+    console.log("Edit address clicked in mobile menu");
+    handleNavigateAndClose("/profile");
+  }, [handleNavigateAndClose]);
 
   // Side effects
   useEffect(() => {
@@ -153,22 +181,6 @@ const MobileMenu = ({
       document.body.style.height = "";
     };
   }, [isOpen]);
-
-  useEffect(() => {
-    console.log("MobileMenu - user prop changed:", user);
-    console.log("MobileMenu - user email:", user?.email);
-    console.log("MobileMenu - user name:", user?.name);
-  }, [user]);
-
-  // Debug render check
-  console.log(
-    "MobileMenu render - user:",
-    user,
-    "isOpen:",
-    isOpen,
-    "forceUpdate:",
-    forceUpdate
-  );
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -212,7 +224,7 @@ const MobileMenu = ({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="p-2 text-gray-700 hover:text-divine-orange hover:bg-orange-50 rounded-lg transition-colors duration-200"
+            className="p-2 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200"
             aria-label="Close menu"
           >
             <X size={28} />
@@ -235,11 +247,11 @@ const MobileMenu = ({
         >
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-100 transition-colors duration-200">
-              <Icon size={16} className="text-divine-orange" />
+              <Icon size={16} className="text-orange-600" />
             </div>
             <div>
               <p className="font-medium text-gray-900 text-sm">{label}</p>
-              <p className="text-xs text-gray-500">{desc}</p>
+              {desc && <p className="text-xs text-gray-500">{desc}</p>}
             </div>
           </div>
           <ChevronRight
@@ -286,7 +298,7 @@ const MobileMenu = ({
         {bulkDiscountPercent > 0 && (
           <div className="bg-green-500 text-white text-center py-2 px-3 rounded-xl">
             <p className="text-sm font-bold">
-              🎉 {bulkDiscountPercent}% OFF on {totalQuantity} items!
+              {bulkDiscountPercent}% OFF on {totalQuantity} items!
             </p>
           </div>
         )}
@@ -295,7 +307,6 @@ const MobileMenu = ({
   };
 
   const UserSection = () => {
-    // Debug log in UserSection
     console.log("UserSection rendering - user:", user);
 
     if (!user) return <GuestSection />;
@@ -331,7 +342,7 @@ const MobileMenu = ({
                   <MapPin className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <div className="text-xs font-semibold text-orange-800 mb-1">
-                      📍 Default Delivery Address
+                      Default Delivery Address
                     </div>
                     <div className="text-xs text-gray-700 space-y-1">
                       <div className="font-medium">{userAddress.name}</div>
@@ -344,18 +355,16 @@ const MobileMenu = ({
                       </div>
                       {userAddress.phone && (
                         <div className="text-gray-500">
-                          📞 {userAddress.phone || userAddress.mobileNumber}
+                          {userAddress.phone || userAddress.mobileNumber}
                         </div>
                       )}
                     </div>
                     <button
-                      onClick={() => {
-                        onClose();
-                        handleNavigate("/address");
-                      }}
-                      className="text-xs text-orange-600 hover:text-orange-700 mt-2 font-medium underline"
+                      onClick={handleEditAddress}
+                      className="text-xs text-orange-600 hover:text-orange-700 mt-2 font-medium underline flex items-center space-x-1"
                     >
-                      Edit Address
+                      <Edit3 size={12} />
+                      <span>Edit Address</span>
                     </button>
                   </div>
                 </div>
@@ -369,10 +378,7 @@ const MobileMenu = ({
                       No delivery address saved
                     </div>
                     <button
-                      onClick={() => {
-                        onClose();
-                        handleNavigate("/address");
-                      }}
+                      onClick={handleEditAddress}
                       className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
                     >
                       + Add Delivery Address
@@ -389,7 +395,7 @@ const MobileMenu = ({
               <button
                 key={path}
                 onClick={() => handleNavigateAndClose(path)}
-                className="w-full flex items-center justify-between p-3 text-left text-gray-700 hover:text-divine-orange hover:bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 transition-all duration-200 rounded-lg border border-gray-200 hover:border-orange-200"
+                className="w-full flex items-center justify-between p-3 text-left text-gray-700 hover:text-orange-600 hover:bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 transition-all duration-200 rounded-lg border border-gray-200 hover:border-orange-200"
               >
                 <div className="flex items-center space-x-3">
                   <Icon size={18} />
@@ -410,7 +416,7 @@ const MobileMenu = ({
           {/* Logout */}
           <button
             onClick={handleLogoutAndClose}
-            className="w-full flex items-center justify-center space-x-2 p-3 text-divine-orange hover:bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 border border-red-200 hover:border-orange-200 rounded-xl transition-colors duration-200 mt-4"
+            className="w-full flex items-center justify-center space-x-2 p-3 text-orange-600 hover:bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 border border-red-200 hover:border-orange-200 rounded-xl transition-colors duration-200 mt-4"
           >
             <LogOut size={16} />
             <span className="font-medium text-sm">Sign Out</span>
@@ -442,7 +448,7 @@ const MobileMenu = ({
         <div className="space-y-3">
           <button
             onClick={() => handleNavigateAndClose("/login")}
-            className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] hover:bg-divine-orange/90 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
+            className="w-full flex items-center justify-center space-x-2 bg-[#FF6B35] hover:bg-orange-600 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-200"
           >
             <User size={18} />
             <span>Sign In</span>
@@ -450,7 +456,7 @@ const MobileMenu = ({
 
           <button
             onClick={() => handleNavigateAndClose("/register")}
-            className="w-full flex items-center justify-center space-x-2 border-2 border-orange-300 text-divine-orange  hover:bg-orange-50 font-semibold py-3 rounded-xl transition-colors duration-200"
+            className="w-full flex items-center justify-center space-x-2 border-2 border-orange-300 text-orange-600 hover:bg-orange-50 font-semibold py-3 rounded-xl transition-colors duration-200"
           >
             <UserPlus size={18} />
             <span>Create Account</span>
