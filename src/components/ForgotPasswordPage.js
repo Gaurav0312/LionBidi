@@ -226,12 +226,9 @@ const ForgotPasswordPage = () => {
             <div className="flex items-center justify-center mb-4 sm:mb-6">
               <img src="/lion.png" alt="Lion Bidi" className="h-12 sm:h-16 w-auto" />
               <div className="ml-2 sm:ml-3">
-                <h1 className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 bg-clip-text text-transparent">
+                <h1 className="text-3xl sm:text-3xl font-extrabold bg-[#FF6B35] bg-clip-text text-transparent">
                   Lion Bidi
                 </h1>
-                <p className="text-xs text-divine-orange font-medium tracking-wide">
-                  Premium Quality
-                </p>
               </div>
             </div>
 
@@ -248,9 +245,9 @@ const ForgotPasswordPage = () => {
               }
             </p>
 
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg mt-3 sm:mt-4">
+            <div className="inline-flex items-center gap-2 bg-[#FF6B35] text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium font-serif shadow-lg mt-3 sm:mt-4">
               <Crown size={14} className="sm:w-4 sm:h-4" />
-              <span>Premium Experience</span>
+              <span>Special Bidi</span>
               <Sparkles size={14} className="sm:w-4 sm:h-4" />
             </div>
           </div>
@@ -288,7 +285,7 @@ const ForgotPasswordPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 sm:py-4 px-4 bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 hover:from-orange-500 hover:via-red-500 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
+                  className="w-full py-3.5 sm:py-4 px-4 bg-[#FF6B35] hover:from-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
                 >
                   {loading ? (
                     <>
@@ -309,7 +306,7 @@ const ForgotPasswordPage = () => {
                   <p className="text-sm text-gray-600 mb-2">
                     We've sent a 6-digit code to:
                   </p>
-                  <p className="text-sm font-semibold text-orange-600 break-all">
+                  <p className="text-sm font-bold text-divine-orange break-all">
                     {email}
                   </p>
                 </div>
@@ -333,7 +330,7 @@ const ForgotPasswordPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 sm:py-4 px-4 bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 hover:from-orange-500 hover:via-red-500 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
+                    className="w-full py-3.5 sm:py-4 px-4 bg-[#FF6B35] hover:from-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
                   >
                     {loading ? (
                       <>
@@ -350,7 +347,7 @@ const ForgotPasswordPage = () => {
                       type="button"
                       onClick={resendOtp}
                       disabled={resendCooldown > 0 || loading}
-                      className="text-sm text-orange-600 hover:text-orange-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                      className="text-sm text-divine-orange hover:scale-[1.02] font-bold disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                       {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : "Resend Code"}
                     </button>
@@ -410,7 +407,7 @@ const ForgotPasswordPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 sm:py-4 px-4 bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 hover:from-orange-500 hover:via-red-500 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
+                  className="w-full py-3.5 sm:py-4 px-4 bg-[#FF6B35] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-base"
                 >
                   {loading ? (
                     <>
@@ -431,7 +428,7 @@ const ForgotPasswordPage = () => {
               Remembered your password?{" "}
               <button
                 onClick={() => navigate("/login")}
-                className="text-orange-600 hover:text-divine-orange font-semibold transition-colors"
+                className="text-divine-orange hover:scale-[1.02] hover:underline font-bold transition-colors"
               >
                 Sign in here
               </button>
