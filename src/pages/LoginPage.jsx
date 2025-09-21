@@ -100,35 +100,41 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError('');
+  
+  if (!validateForm()) return;
+  
+  setLoading(true);
+  try {
+    const loginData = {
+      email: formData.email.toLowerCase().trim(),
+      password: formData.password,
+    };
 
-    if (!validateForm()) return;
-    setLoading(true);
-
-    try {
-      const loginData = {
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password,
-      };
-
-      // Dispatch Redux login thunk (no unwrap here)
-      await dispatch(loginUser(loginData)).unwrap();
-
+    // Remove .unwrap() - let Redux handle the state
+    const result = await dispatch(loginUser(loginData));
+    
+    if (loginUser.fulfilled.match(result)) {
       // Merge local cart with server cart
       if (localCartItems.length > 0) {
         await dispatch(mergeCart(localCartItems));
       }
-
-      alert("Login successful! Welcome back to Lion Bidi!");
-      navigate("/");
-    } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Login failed. Please check your credentials.");
-    } finally {
-      setLoading(false);
+      
+      alert('Login successful! Welcome back to Lion Bidi!');
+      navigate('/');
+    } else {
+      // Handle rejection
+      setError(result.payload || 'Login failed. Please check your credentials.');
     }
-  };
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Login failed. Please check your credentials.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 flex flex-col">
