@@ -109,7 +109,6 @@ const LoginPage = () => {
 
       console.log("Attempting login with:", loginData);
 
-      // Use ONLY the App Context login function
       const result = await login(loginData);
       
       if (result) {
