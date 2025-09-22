@@ -4,6 +4,7 @@ import { useAppContext } from "../context/AppContext";
 import { sampleProducts } from "../data/sampleProducts";
 import ProductCard from "../components/ProductCard";
 import { useNavigate } from "react-router-dom";
+import SEO from '../components/SEO';
 
 // Home Page Component with Divine Hindu Theme
 const HomePage = () => {
@@ -25,6 +26,12 @@ const HomePage = () => {
   };
 
   return (
+    <>
+      <SEO 
+        title="Lion Bidi Online Store"
+        description="Buy fresh, authentic bidi from Madhya Pradesh's trusted manufacturer"
+        keywords="special bidi, fresh tobacco, Lion Bidi, Madhya Pradesh"
+      />
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50">
       {/* Hero Section */}
       <section className="hero-section relative w-full min-h-screen overflow-hidden bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50">
@@ -238,6 +245,7 @@ const HomePage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
