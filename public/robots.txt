@@ -1,3 +1,17 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Block sensitive pages
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /checkout
+Disallow: /address
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /profile
+Disallow: /admin
+Disallow: /auth/google/callback
+
+Sitemap: https://www.lionbidi.shop/sitemap.xml
