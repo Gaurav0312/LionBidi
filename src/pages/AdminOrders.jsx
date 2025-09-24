@@ -118,6 +118,566 @@ const AdminOrders = () => {
     }
   };
 
+  // Add receipt download functionality - copied from OrdersPage
+  const canDownloadReceipt = (order) => {
+    const downloadableStatuses = [
+      "confirmed",
+      "processing", 
+      "shipped",
+      "delivered",
+      "payment_submitted",
+    ];
+    return downloadableStatuses.includes(order.status);
+  };
+
+  // Helper function to convert number to words (Indian format)
+  const convertNumberToWords = (amount) => {
+    const ones = [
+      "",
+      "One",
+      "Two", 
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+    ];
+    const teens = [
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+    ];
+    const tens = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
+
+    const convertHundreds = (num) => {
+      let result = "";
+
+      if (num >= 100) {
+        result += ones[Math.floor(num / 100)] + " Hundred ";
+        num %= 100;
+      }
+
+      if (num >= 20) {
+        result += tens[Math.floor(num / 10)] + " ";
+        num %= 10;
+      } else if (num >= 10) {
+        result += teens[num - 10] + " ";
+        return result;
+      }
+
+      if (num > 0) {
+        result += ones[num] + " ";
+      }
+
+      return result;
+    };
+
+    if (amount === 0) return "Zero Rupees";
+
+    let rupees = Math.floor(amount);
+    let paise = Math.round((amount - rupees) * 100);
+
+    let result = "";
+
+    if (rupees >= 10000000) {
+      result += convertHundreds(Math.floor(rupees / 10000000)) + "Crore ";
+      rupees %= 10000000;
+    }
+
+    if (rupees >= 100000) {
+      result += convertHundreds(Math.floor(rupees / 100000)) + "Lakh ";
+      rupees %= 100000;
+    }
+
+    if (rupees >= 1000) {
+      result += convertHundreds(Math.floor(rupees / 1000)) + "Thousand ";
+      rupees %= 1000;
+    }
+
+    if (rupees > 0) {
+      result += convertHundreds(rupees);
+    }
+
+    result += "Rupees";
+
+    if (paise > 0) {
+      result += " And " + convertHundreds(paise) + "Paise";
+    }
+
+    return result.trim();
+  };
+
+  // Download receipt with full order data
+  const downloadReceiptWithFullData = async (orderId) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`${BASE_URL}/api/orders/${orderId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          const fullOrder = data.order;
+          downloadReceipt(fullOrder);
+        } else {
+          console.error("Failed to fetch order details for receipt");
+          alert("Failed to fetch order details. Please try again.");
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error fetching order details for receipt:", error);
+      alert("Error loading order details. Please try again.");
+    }
+  };
+
+  // Receipt download function - adapted from OrdersPage
+  const downloadReceipt = (order) => {
+    if (!order) return;
+
+    // Dynamically import jsPDF
+    import("jspdf")
+      .then(({ jsPDF }) => {
+        const doc = new jsPDF("p", "mm", "a4");
+        doc.setFont("helvetica");
+
+        const logoUrl =
+          "https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png";
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        img.onload = function () {
+          try {
+            generateProfessionalReceipt(doc, order, true, img);
+          } catch (error) {
+            console.error("Error adding logo:", error);
+            generateProfessionalReceipt(doc, order, false, null);
+          }
+        };
+
+        img.onerror = function () {
+          console.warn("Logo failed to load, generating receipt without logo");
+          generateProfessionalReceipt(doc, order, false, null);
+        };
+
+        img.src = logoUrl;
+      })
+      .catch((error) => {
+        console.error("Error loading jsPDF:", error);
+        downloadTextReceipt(order);
+      });
+  };
+
+  // Professional Receipt Generator Function
+  const generateProfessionalReceipt = (doc, order, hasLogo, logoImg) => {
+    const paymentStatus = order.payment?.paymentStatus || "pending";
+    const paymentMethod = order.payment?.method || "UPI";
+    const orderTotal = order.total || 0;
+    const orderSubtotal = order.subtotal || order.total || 0;
+    const orderShipping = order.shipping || 0;
+    const orderItems = order.items || [];
+    const shippingAddress = order.shippingAddress || {};
+
+    const gstRate = 0.28;
+    const totalWithGst = orderTotal;
+    const baseAmount = totalWithGst / (1 + gstRate);
+    const gstAmount = totalWithGst - baseAmount;
+    const shippingAmount = orderShipping || 0;
+
+    let yPosition = 15;
+    const formatRupee = (amount) => `Rs. ${amount.toFixed(2)}`;
+    const orderDate = order.orderDate ? new Date(order.orderDate) : new Date();
+
+    // Header Section with Company Branding
+    if (hasLogo) {
+      const logoWidth = 30;
+      const logoHeight = 20;
+      const logoX = 15;
+      const logoY = yPosition;
+
+      doc.addImage(logoImg, "PNG", logoX, logoY, logoWidth, logoHeight);
+
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 107, 53);
+      doc.text("LION BIDI", 50, yPosition + 8);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
+      doc.text("Premium Quality Bidi Manufacturer", 50, yPosition + 15);
+
+      yPosition += 25;
+    } else {
+      doc.setFontSize(24);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 107, 53);
+      doc.text("LION BIDI COMPANY", 105, yPosition + 5, { align: "center" });
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
+      doc.text("Premium Quality Bidi Manufacturer", 105, yPosition + 12, {
+        align: "center",
+      });
+
+      yPosition += 20;
+    }
+
+    // Company contact information
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    doc.text("Phone: +91 9589773525", 15, yPosition);
+    doc.text("Email: lionbidicompany@gmail.com", 15, yPosition + 5);
+    doc.text("GST No: [23BKNPV1683G1ZS]", 15, yPosition + 10);
+
+    doc.text(`Date: ${orderDate.toLocaleDateString("en-IN")}`, 150, yPosition);
+    doc.text(
+      `Time: ${orderDate.toLocaleTimeString("en-IN")}`,
+      150,
+      yPosition + 5
+    );
+
+    // Decorative line
+    yPosition += 18;
+    doc.setLineWidth(0.8);
+    doc.setDrawColor(255, 107, 53);
+    doc.line(15, yPosition, 195, yPosition);
+    yPosition += 8;
+
+    // Receipt Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("TAX INVOICE / PAYMENT RECEIPT", 105, yPosition, {
+      align: "center",
+    });
+    yPosition += 12;
+
+    // Receipt details in professional box format
+    doc.setFillColor(248, 249, 250);
+    doc.rect(15, yPosition - 2, 180, 35, "F");
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(15, yPosition - 2, 180, 35);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+
+    // Left column
+    doc.text("Receipt No:", 20, yPosition + 5);
+    doc.text("Transaction ID:", 20, yPosition + 12);
+    doc.text("Order Date:", 20, yPosition + 19);
+    doc.text("Payment Method:", 20, yPosition + 26);
+
+    // Right column - values
+    doc.setFont("helvetica", "normal");
+    doc.text(order.orderNumber || "N/A", 60, yPosition + 5);
+    doc.text(order.payment?.transactionId || "N/A", 60, yPosition + 12);
+    doc.text(orderDate.toLocaleDateString("en-IN"), 60, yPosition + 19);
+    doc.text((paymentMethod || "UPI").toUpperCase(), 60, yPosition + 26);
+
+    // Status and amount on right side
+    doc.setFont("helvetica", "bold");
+    doc.text("Payment Status:", 120, yPosition + 5);
+    doc.text("Total Amount:", 120, yPosition + 19);
+
+    doc.setFont("helvetica", "bold");
+    const statusColor =
+      paymentStatus === "verified" ? [47, 181, 29] : [234, 179, 8];
+    doc.setTextColor(...statusColor);
+    doc.text(paymentStatus.toUpperCase(), 165, yPosition + 5);
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(formatRupee(totalWithGst), 165, yPosition + 19);
+
+    yPosition += 45;
+
+    // Billing Information Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 107, 53);
+    doc.text("BILL TO:", 20, yPosition);
+    yPosition += 8;
+
+    // Customer details box
+    doc.setFillColor(252, 252, 252);
+    doc.rect(15, yPosition - 2, 180, 30, "F");
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(220, 220, 220);
+    doc.rect(15, yPosition - 2, 180, 35);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text((shippingAddress.name || "N/A").toUpperCase(), 20, yPosition + 5);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`Mobile: ${shippingAddress.phone || "N/A"}`, 20, yPosition + 12);
+    doc.text(
+      `Email: ${shippingAddress.email || order.user?.email || "N/A"}`,
+      20,
+      yPosition + 18
+    );
+
+    // Address formatting
+    let addressLine = "";
+    if (shippingAddress.street) addressLine += shippingAddress.street + ", ";
+    if (shippingAddress.city) addressLine += shippingAddress.city + ", ";
+    if (shippingAddress.state) addressLine += shippingAddress.state + " - ";
+    if (shippingAddress.zipCode) addressLine += shippingAddress.zipCode;
+
+    if (addressLine) {
+      doc.text(`Address: ${addressLine}`, 20, yPosition + 24);
+    }
+
+    yPosition += 40;
+
+    // Items Table Header
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 107, 53);
+    doc.text("ITEM DETAILS:", 20, yPosition);
+    yPosition += 10;
+
+    // Table header with better styling
+    doc.setFillColor(255, 107, 53);
+    doc.rect(15, yPosition - 2, 180, 10, "F");
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text("S.No", 18, yPosition + 4);
+    doc.text("Item Description", 35, yPosition + 4);
+    doc.text("HSN Code", 90, yPosition + 4);
+    doc.text("Qty", 120, yPosition + 4);
+    doc.text("Rate", 140, yPosition + 4);
+    doc.text("Amount", 170, yPosition + 4);
+
+    yPosition += 12;
+
+    // Items with professional formatting
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "semibold");
+    let itemCounter = 1;
+
+    orderItems.forEach((item, index) => {
+      // Alternating row colors
+      if (index % 2 === 0) {
+        doc.setFillColor(248, 249, 250);
+        doc.rect(15, yPosition - 2, 180, 8, "F");
+      }
+
+      const itemName = (item.name || "Unknown Item").toUpperCase();
+      const itemQty = item.quantity || 0;
+      const itemHSN = item.hsn || "24031921";
+      const itemRate = item.price || 0;
+      const itemTotal = itemRate * itemQty;
+
+      doc.text(itemCounter.toString(), 18, yPosition + 3);
+      doc.text(itemName, 35, yPosition + 3);
+      doc.text(itemHSN, 90, yPosition + 3);
+      doc.text(itemQty.toString(), 125, yPosition + 3, { align: "center" });
+      doc.text(formatRupee(itemRate), 155, yPosition + 3, { align: "right" });
+      doc.text(formatRupee(itemTotal), 185, yPosition + 3, { align: "right" });
+
+      yPosition += 8;
+      itemCounter++;
+    });
+
+    // Horizontal line after items
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(180, 180, 180);
+    doc.line(15, yPosition + 2, 195, yPosition + 2);
+    yPosition += 10;
+
+    // Professional Totals Section
+    const totalsStartX = 120;
+    const valuesStartX = 185;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+
+    // Subtotal (before GST)
+    doc.text("Subtotal (Excl. GST):", totalsStartX, yPosition);
+    doc.text(formatRupee(baseAmount), valuesStartX, yPosition, {
+      align: "right",
+    });
+    yPosition += 6;
+
+    // GST breakdown
+    doc.text(`GST @ 28% (Included):`, totalsStartX, yPosition);
+    doc.text(formatRupee(gstAmount), valuesStartX, yPosition, {
+      align: "right",
+    });
+    yPosition += 6;
+
+    // Shipping if applicable
+    if (shippingAmount > 0) {
+      doc.text("Shipping Charges:", totalsStartX, yPosition);
+      doc.text(formatRupee(shippingAmount), valuesStartX, yPosition, {
+        align: "right",
+      });
+      yPosition += 6;
+    }
+
+    // Total line with emphasis
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(255, 107, 53);
+    doc.line(totalsStartX, yPosition + 2, 190, yPosition + 2);
+    yPosition += 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(255, 107, 53);
+    doc.text("TOTAL AMOUNT:", totalsStartX, yPosition);
+    doc.text(formatRupee(totalWithGst), valuesStartX, yPosition, {
+      align: "right",
+    });
+    yPosition += 10;
+
+    // Footer Section
+    doc.setFillColor(255, 107, 53);
+    doc.rect(15, yPosition, 180, 20, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text("THANK YOU FOR YOUR BUSINESS!", 105, yPosition + 8, {
+      align: "center",
+    });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(
+      "For queries: +91 9589773525 | lionbidicompany@gmail.com",
+      105,
+      yPosition + 15,
+      { align: "center" }
+    );
+
+    // Outer professional border
+    doc.setLineWidth(1);
+    doc.setDrawColor(255, 107, 53);
+    doc.rect(10, 10, 190, yPosition + 15);
+
+    // Save the PDF
+    doc.save(`Receipt-${order.orderNumber || "order"}-ADMIN.pdf`);
+  };
+
+  // Fallback text receipt function
+  const downloadTextReceipt = (order) => {
+    const orderTotal = order.total || 0;
+    const orderSubtotal = order.subtotal || order.total || 0;
+    const orderShipping = order.shipping || 0;
+    const orderItems = order.items || [];
+    const shippingAddress = order.shippingAddress || {};
+    const paymentMethod = order.payment?.method || "UPI";
+    const paymentStatus = order.payment?.paymentStatus || "pending";
+    const orderDate = order.orderDate ? new Date(order.orderDate) : new Date();
+
+    const receiptContent = `
+LION BIDI
++91 9589773525
+lionbidicompany@gmail.com
+
+ORDER RECEIPT (ADMIN COPY)
+==================
+
+Receipt No. : ${order.orderNumber || "N/A"}
+Transaction ID : ${order.payment?.transactionId || "N/A"}
+Receipt Date : ${orderDate.toLocaleDateString("en-CA")}
+Transaction Date : ${orderDate.toLocaleDateString("en-CA")}
+Transaction Time : ${orderDate.toLocaleTimeString("en-IN")}
+Transaction Amount : ₹ ${orderTotal.toFixed(2)}
+
+Bill to :
+${shippingAddress.name || "N/A"}
+${shippingAddress.phone || "N/A"}
+${shippingAddress.email || order.user?.email || "N/A"}
+${shippingAddress.street || ""}
+${shippingAddress.city || ""} ${shippingAddress.state || ""} - ${
+      shippingAddress.zipCode || ""
+    }
+
+# Item & Description                Amount
+${orderItems
+  .map(
+    (item) =>
+      `${item.name || "Unknown Item"} x${item.quantity || 0}              ₹ ${(
+        (item.price || 0) * (item.quantity || 0)
+      ).toFixed(2)}`
+  )
+  .join("\n")}
+
+Sub Total                           ₹ ${orderSubtotal.toFixed(2)}
+GST(28%)                           ₹ ${(
+      orderTotal -
+      orderSubtotal -
+      orderShipping
+    ).toFixed(2)}
+${
+  orderShipping > 0
+    ? `Shipping Charges                   ₹ ${orderShipping.toFixed(2)}`
+    : ""
+}
+Total                              ₹ ${orderTotal.toFixed(2)}
+Amount Received                    ₹ ${orderTotal.toFixed(2)}
+
+Amount Received in Words :
+${convertNumberToWords(orderTotal)}
+
+Payment Method: ${paymentMethod}
+Payment Status: ${paymentStatus.toUpperCase()}
+
+Notes:
+This is an admin-generated receipt and does not require a signature
+
+Thank you for your business!
+For support: +91 95897 73525 | lionbidicompany@gmail.com
+  `;
+
+    const blob = new Blob([receiptContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `admin-receipt-${order.orderNumber || "order"}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case "pending_payment":
@@ -301,6 +861,7 @@ const AdminOrders = () => {
                         <button
                           onClick={() => setSelectedOrder(order)}
                           className="text-blue-600 hover:text-blue-900"
+                          title="View Details"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -310,9 +871,20 @@ const AdminOrders = () => {
                             setShowStatusModal(true);
                           }}
                           className="text-green-600 hover:text-green-900"
+                          title="Update Status"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
+                        {/* Download Receipt Button - NEW */}
+                        {canDownloadReceipt(order) && (
+                          <button
+                            onClick={() => downloadReceiptWithFullData(order._id)}
+                            className="text-orange-600 hover:text-orange-900"
+                            title="Download Receipt"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        )}
                         <button className="text-gray-400 hover:text-gray-600">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
@@ -439,7 +1011,18 @@ const AdminOrders = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center">
+                {/* Download Receipt Button in Modal */}
+                {canDownloadReceipt(selectedOrder) && (
+                  <button
+                    onClick={() => downloadReceipt(selectedOrder)}
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Receipt
+                  </button>
+                )}
+                
                 <button
                   onClick={() => setSelectedOrder(null)}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
