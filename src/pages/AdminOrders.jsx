@@ -229,32 +229,34 @@ const AdminOrders = () => {
 
   // Download receipt with full order data
   const downloadReceiptWithFullData = async (orderId) => {
-    try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`${BASE_URL}/api/orders/${orderId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const fullOrder = data.order;
-          downloadReceipt(fullOrder);
-        } else {
-          console.error("Failed to fetch order details for receipt");
-          alert("Failed to fetch order details. Please try again.");
-        }
+  try {
+    const token = localStorage.getItem("adminToken");
+    // Use the admin endpoint instead
+    const response = await fetch(`${BASE_URL}/api/orders/${orderId}/admin`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        const fullOrder = data.order;
+        downloadReceipt(fullOrder);
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        console.error("Failed to fetch order details for receipt");
+        alert("Failed to fetch order details. Please try again.");
       }
-    } catch (error) {
-      console.error("Error fetching order details for receipt:", error);
-      alert("Error loading order details. Please try again.");
+    } else {
+      throw new Error(`HTTP ${response.status}`);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching order details for receipt:", error);
+    alert("Error loading order details. Please try again.");
+  }
+};
+
 
   // Receipt download function - adapted from OrdersPage
   const downloadReceipt = (order) => {
