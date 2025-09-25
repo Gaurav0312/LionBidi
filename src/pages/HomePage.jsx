@@ -250,7 +250,7 @@ const HomePage = () => {
                     <div className="bg-white border border-orange-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-300">
                       <div className="mb-6 flex justify-center">
                         <img
-                          src="/LionBidi.jpg"
+                          src="https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg"
                           alt="Lion Bidi Pack - Premium Handcrafted Bidi from Madhya Pradesh"
                           className="w-full h-48 sm:h-56 lg:h-64 object-cover rounded-lg"
                           loading="lazy"
