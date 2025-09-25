@@ -9,7 +9,7 @@ const sampleSearchProducts = [
     name: "Special Lion Bidi ( Big )",
     price: "₹400.00",
     salePrice: "₹280.00",
-    image: "/LionBidi.jpg",
+    image: "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg",
     slug: "special-lion-bidi-big"
   },
   {
@@ -17,7 +17,7 @@ const sampleSearchProducts = [
     name: "Special Lion Bidi ( Small )",
     price: "₹300.00",
     salePrice: "₹210.00",
-    image: "/LionBidiSmall.jpg",
+    image: "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644249/LionBidiSmall_cq01ov.jpg",
     slug: "special-lion-bidi-small"
   }
 ];
