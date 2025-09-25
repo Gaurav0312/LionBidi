@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
   <!-- Public Pages -->
   <url>
     <loc>https://www.lionbidi.shop/</loc>
@@ -29,27 +30,13 @@
     <loc>https://www.lionbidi.shop/refund-policy</loc>
     <priority>0.6</priority>
   </url>
-  <url>
-    <loc>https://www.lionbidi.shop/address</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.lionbidi.shop/checkout</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.lionbidi.shop/orders</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.lionbidi.shop/wishlist</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.lionbidi.shop/profile</loc>
-    <priority>0.7</priority>
-  </url>
 
-  <!-- Dynamic Pages (Google will discover automatically) -->
-  <!-- Example: https://www.lionbidi.shop/product/some-slug -->
+  <!-- Dynamic product pages (Google will discover automatically if internal links exist) -->
+  <!-- Example:
+  <url>
+    <loc>https://www.lionbidi.shop/product/special-lion-bidi</loc>
+    <priority>0.9</priority>
+  </url>
+  -->
+
 </urlset>
