@@ -224,7 +224,7 @@ const ForgotPasswordPage = () => {
           {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex items-center justify-center mb-4 sm:mb-6">
-              <img src="/lion.png" alt="Lion Bidi" className="h-12 sm:h-16 w-auto" />
+              <img src="https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png" alt="Lion Bidi" className="h-12 sm:h-16 w-auto" />
               <div className="ml-2 sm:ml-3">
                 <h1 className="text-3xl sm:text-3xl font-extrabold bg-[#FF6B35] bg-clip-text text-transparent">
                   Lion Bidi
