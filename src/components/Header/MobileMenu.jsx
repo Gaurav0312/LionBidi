@@ -211,7 +211,7 @@ const MobileMenu = ({
           <div className="flex items-center space-x-3">
             <div className="relative">
               <img
-                src="/lion.png"
+                src="https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png"
                 alt="Lion Bidi"
                 className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
               />
@@ -433,7 +433,7 @@ const MobileMenu = ({
         <div className="text-center bg-orange-50 border border-orange-200 rounded-xl p-6 mb-4">
           <div className="relative mx-auto mb-3 flex justify-center">
             <img
-              src="/lion.png"
+              src="https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png"
               alt="Lion Bidi"
               className="h-18 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
             />
