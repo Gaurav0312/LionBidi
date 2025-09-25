@@ -52,10 +52,22 @@ const HomePage = () => {
   return (
     <>
       <SEO
-        title="Buy Bidi Online India | Lion Bidi - Premium Tobacco Products | Madhya Pradesh"
-        description="Buy premium bidi online from Lion Bidi - India's trusted tobacco manufacturer from Madhya Pradesh. Authentic handcrafted bidi with natural taste. Fast delivery across India. Order now!"
-        keywords="buy bidi online, bidi online india, tobacco products, lion bidi, madhya pradesh bidi, handcrafted bidi, natural tobacco, indian bidi, premium bidi, bidi manufacturer, bidi shop online, tobacco online, bidi delivery"
+        title="Buy Bidi Online India | Lion Bidi - Premium Tobacco Products"
+        description="Buy premium bidi online from Lion Bidi - Madhya Pradesh's trusted bidi manufacturer. Authentic handcrafted bidi with fast delivery."
+        keywords="buy bidi online, bidi online india, tobacco products, lion bidi, madhya pradesh bidi"
         canonicalUrl="https://www.lionbidi.shop"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Lion Bidi",
+          url: "https://www.lionbidi.shop",
+          logo: "https://www.lionbidi.shop/logo512.png",
+          sameAs: [
+            "https://www.facebook.com/yourpage",
+            "https://www.instagram.com/yourpage",
+            "https://twitter.com/yourpage",
+          ],
+        }}
       />
 
       {/* Enhanced Schema Markup for Better SEO */}
