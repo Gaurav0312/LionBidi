@@ -448,7 +448,7 @@ const RegisterPage = () => {
             {/* Logo Section - Responsive */}
             <div className="flex items-center justify-center mb-4 sm:mb-6">
               <img
-                src="/lion.png"
+                src="https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png"
                 alt="Lion Bidi"
                 className="h-12 sm:h-16 w-auto"
               />
