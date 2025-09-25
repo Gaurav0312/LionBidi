@@ -238,7 +238,7 @@ const Header = () => {
             >
               <div className="relative">
                 <img
-                  src="/lion.png"
+                  src="https://res.cloudinary.com/dxqerqng1/image/upload/v1754660338/campaign_covers/brixv4aazfsuzq27kfbc.png"
                   alt="Lion Bidi"
                   className="h-10 w-auto sm:h-12 lg:h-14 transition-all duration-300 group-hover:scale-[1.02]"
                 />
