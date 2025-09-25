@@ -365,12 +365,12 @@ const Cart = ({ isCartOpen, setIsCartOpen, handleNavigate }) => {
                               src={
                                 item.images && item.images.length > 0
                                   ? item.images[0]
-                                  : item.image || "/LionBidi.jpg"
+                                  : item.image || "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg"
                               }
                               alt={item.name || "Product"}
                               className="w-20 h-20 rounded-md object-cover shadow-lg border-2 border-gray-100"
                               onError={(e) => {
-                                e.currentTarget.src = "/LionBidi.jpg";
+                                e.currentTarget.src = "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg";
                               }}
                             />
                           </div>
