@@ -33,6 +33,7 @@ import AdminOrders from "./pages/AdminOrders";
 import AdminUsers from "./pages/AdminUsers";
 import AdminSettings from "./pages/AdminSettings";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminInventory from "./pages/AdminInventory";
 
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
@@ -49,10 +50,8 @@ import OrderConfirmationPage from "./pages/OrderConfirmationPage";
 import Layout from "./components/Layout";
 
 // Backend API configuration
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
-const BASE_URL =
-  process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
+const BASE_URL = process.env.REACT_APP_API_URL || "https://lion-bidi-backend.onrender.com";
 
 const App = () => {
   const navigate = useNavigate();
@@ -71,7 +70,11 @@ const App = () => {
 
   // Helper to make authenticated API calls
   const apiCall = async (method, endpoint, data = null) => {
-    const token = localStorage.getItem("token");
+    // Try admin token first, then regular token
+    const adminToken = localStorage.getItem("adminToken");
+    const userToken = localStorage.getItem("token");
+    const token = adminToken || userToken;
+
     const config = {
       method,
       url: `${API_BASE_URL}${endpoint}`,
@@ -84,9 +87,21 @@ const App = () => {
     };
 
     console.log(`API Call: ${method} ${endpoint}`, data);
-    const response = await axios(config);
-    console.log(`API Response:`, response.data);
-    return response;
+    console.log("Using token:", token ? "Present" : "Missing");
+
+    try {
+      const response = await axios(config);
+      console.log(`API Response:`, response.data);
+      return response;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        console.error("Unauthorized access - check admin login");
+        // Clear invalid tokens
+        clearAdminToken();
+        localStorage.removeItem("token");
+      }
+      throw error;
+    }
   };
 
   /* ═══ Fetch cart from server ═══ */
@@ -327,7 +342,6 @@ const App = () => {
           _forceUpdate: Math.random().toString(36),
         };
 
-        // Update only local state (NO REDUX)
         setUser(newUserData);
         localStorage.setItem("user", JSON.stringify(newUserData));
 
@@ -366,7 +380,6 @@ const App = () => {
           _forceUpdate: Math.random().toString(36),
         };
 
-        // Update only local state (NO REDUX)
         setUser(newUserData);
         localStorage.setItem("user", JSON.stringify(newUserData));
 
@@ -443,8 +456,8 @@ const App = () => {
       // Clear local storage
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      localStorage.removeItem("cart"); // Optional: clear guest cart too
-      localStorage.removeItem("wishlist"); // Optional: clear guest wishlist too
+      localStorage.removeItem("cart");
+      localStorage.removeItem("wishlist");
 
       // Clear local state
       setUser(null);
@@ -460,6 +473,40 @@ const App = () => {
     } catch (error) {
       console.error("Logout error:", error);
       //toast.error("Error during logout");
+    }
+  };
+
+  // Add this admin login function
+  const adminLogin = async (credentials) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Admin login failed");
+      }
+
+      setAdminToken(data.token);
+
+      localStorage.setItem("token", data.token);
+
+      console.log("Admin login successful:", data.admin);
+
+      return {
+        success: true,
+        admin: data.admin,
+        token: data.token,
+      };
+    } catch (error) {
+      console.error("Admin login failed:", error);
+      throw error;
     }
   };
 
@@ -761,7 +808,6 @@ const App = () => {
         });
 
         if (response.data.success) {
-          
           const newWishlist = [...(response.data.wishlist || [])];
           console.log("Setting new wishlist state:", newWishlist);
 
@@ -822,6 +868,157 @@ const App = () => {
     }
   };
 
+  const fetchAdminDashboardData = async () => {
+    try {
+      const response = await apiCall("GET", "/api/admin/dashboard");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching admin dashboard data:", error);
+      throw error;
+    }
+  };
+
+  const fetchProductInventory = async () => {
+    try {
+      const mockInventory = [
+        {
+          id: 1,
+          name: "Special Lion Bidi (Big)",
+          sku: "LB-BIG-001",
+          category: "BEEDI",
+          currentStock: 10000,
+          minStock: 500,
+          maxStock: 10000,
+          reorderPoint: 1000,
+          unitCost: 180,
+          sellingPrice: 280,
+          supplier: "Lion Bidi Manufacturer",
+          lastRestocked: new Date().toISOString().split("T")[0],
+          status: "active",
+          location: "Warehouse A - Section 1",
+          batchNumber: "LB-" + new Date().getFullYear() + "-001",
+          expiryDate: "2025-12-31",
+          quality: "A+",
+          monthlyConsumption: 800,
+        },
+        {
+          id: 2,
+          name: "Special Lion Bidi (Small)",
+          sku: "LB-SMALL-002",
+          category: "BEEDI",
+          currentStock: 10000,
+          minStock: 500,
+          maxStock: 10000,
+          reorderPoint: 1000,
+          unitCost: 140,
+          sellingPrice: 210,
+          supplier: "Lion Bidi Manufacturer",
+          lastRestocked: new Date().toISOString().split("T")[0],
+          status: "active",
+          location: "Warehouse A - Section 2",
+          batchNumber: "LB-" + new Date().getFullYear() + "-002",
+          expiryDate: "2025-12-31",
+          quality: "A+",
+          monthlyConsumption: 600,
+        },
+      ];
+
+      return {
+        success: true,
+        products: mockInventory,
+      };
+    } catch (error) {
+      console.error("Error fetching inventory data:", error);
+      throw error;
+    }
+  };
+
+  const updateProductStock = async (productId, data) => {
+    try {
+      // For now, this will just return success
+      // Later you can implement real stock management
+      console.log("Updating stock for product:", productId, data);
+      return {
+        success: true,
+        message: "Stock updated successfully",
+      };
+    } catch (error) {
+      console.error("Error updating product stock:", error);
+      throw error;
+    }
+  };
+
+  // Add these functions before your contextValue object in App.js
+
+  const handleOrderStatusChange = async (
+    orderId,
+    newStatus,
+    oldStatus,
+    orderItems
+  ) => {
+    try {
+      // When payment is confirmed - deduct stock
+      if (newStatus === "confirmed" && oldStatus === "pending_payment") {
+        for (const item of orderItems) {
+          await updateProductStock(item.productId, {
+            type: "subtract",
+            quantity: item.quantity,
+            notes: `Auto: Order ${orderId} confirmed`,
+            automated: true,
+          });
+        }
+        console.log(`Stock deducted for order ${orderId}`);
+      }
+
+      // When order is cancelled - restore stock
+      if (newStatus === "cancelled") {
+        for (const item of orderItems) {
+          await updateProductStock(item.productId, {
+            type: "add",
+            quantity: item.quantity,
+            notes: `Auto: Order ${orderId} cancelled`,
+            automated: true,
+          });
+        }
+        console.log(`Stock restored for cancelled order ${orderId}`);
+      }
+
+      // When order is refunded - restore stock
+      if (newStatus === "refunded") {
+        for (const item of orderItems) {
+          await updateProductStock(item.productId, {
+            type: "add",
+            quantity: item.quantity,
+            notes: `Auto: Order ${orderId} refunded`,
+            automated: true,
+          });
+        }
+        console.log(`Stock restored for refunded order ${orderId}`);
+      }
+    } catch (error) {
+      console.error("Error handling stock for order status change:", error);
+      // You might want to log this for manual review
+    }
+  };
+
+  const reserveStock = async (orderItems) => {
+    // This would mark stock as reserved but not deducted
+    // Implement based on your inventory system
+    console.log("Reserving stock for pending order:", orderItems);
+  };
+
+  const getAdminToken = () => {
+    return localStorage.getItem("adminToken") || localStorage.getItem("token");
+  };
+
+  const setAdminToken = (token) => {
+    localStorage.setItem("adminToken", token);
+  };
+
+  const clearAdminToken = () => {
+    localStorage.removeItem("adminToken");
+  };
+
   /* ═══════════════════════════ CONTEXT VALUE ═══════════════════════════ */
   const contextValue = {
     user: user,
@@ -847,6 +1044,19 @@ const App = () => {
     removeFromWishlist,
     toggleWishlist,
     fetchUserAddress,
+
+    // ADD THESE NEW API FUNCTIONS:
+    adminLogin,
+    getAdminToken,
+    setAdminToken,
+    clearAdminToken,
+    apiCall, // Make the existing apiCall function available in context
+    API_BASE_URL, // Make API base URL available
+    fetchAdminDashboardData,
+    fetchProductInventory,
+    handleOrderStatusChange,
+    updateProductStock,
+    reserveStock,
 
     showToast: (msg, type = "success") =>
       type === "error" ? toast.error(msg) : toast.success(msg),
@@ -896,6 +1106,7 @@ const App = () => {
                   <AdminLayout>
                     <Routes>
                       <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="inventory" element={<AdminInventory />} />
                       <Route
                         path="payment-verification"
                         element={<AdminPaymentVerification />}
@@ -906,7 +1117,11 @@ const App = () => {
                       <Route path="analytics" element={<AdminAnalytics />} />
                       <Route
                         path=""
-                        element={<Navigate to="/admin/dashboard" />}
+                        element={<Navigate to="/admin/dashboard" replace />}
+                      />
+                      <Route
+                        path="*"
+                        element={<Navigate to="/admin/dashboard" replace />}
                       />
                     </Routes>
                   </AdminLayout>
