@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import AppContext from '../context/AppContext';
 import { 
   Package, 
   AlertTriangle, 
-  TrendingDown, 
-  TrendingUp,
   Plus,
   Edit,
   Eye,
@@ -11,15 +10,10 @@ import {
   Filter,
   Download,
   Upload,
-  BarChart3,
-  Truck,
-  Factory,
   AlertCircle,
   CheckCircle,
   XCircle,
-  Calendar,
   DollarSign,
-  Layers,
   Archive
 } from 'lucide-react';
 
@@ -30,181 +24,110 @@ const AdminInventory = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showAddProduct, setShowAddProduct] = useState(false);
   const [showStockUpdate, setShowStockUpdate] = useState(false);
   const [stockUpdateData, setStockUpdateData] = useState({ type: 'add', quantity: '', notes: '' });
+  const { fetchProductInventory, updateProductStock, showToast } = useContext(AppContext);
 
-  // Mock data - replace with API calls
-  useEffect(() => {
-    setTimeout(() => {
-      setProducts([
-        {
-          id: 1,
-          name: 'Lion Bidi Classic',
-          sku: 'LB-CLASSIC-001',
-          category: 'Classic',
-          currentStock: 2450,
-          minStock: 500,
-          maxStock: 5000,
-          reorderPoint: 750,
-          unitCost: 2.50,
-          sellingPrice: 4.00,
-          supplier: 'Local Supplier A',
-          lastRestocked: '2024-12-15',
-          status: 'active',
-          location: 'Warehouse A - Section 1',
-          batchNumber: 'LB240115001',
-          expiryDate: '2025-06-15',
-          quality: 'A',
-          monthlyConsumption: 800,
-          image: '/placeholder-bidi.jpg'
-        },
-        {
-          id: 2,
-          name: 'Lion Bidi Premium',
-          sku: 'LB-PREMIUM-002',
-          category: 'Premium',
-          currentStock: 150,
-          minStock: 200,
-          maxStock: 1500,
-          reorderPoint: 300,
-          unitCost: 3.75,
-          sellingPrice: 6.00,
-          supplier: 'Premium Leaf Co.',
-          lastRestocked: '2024-12-10',
-          status: 'low_stock',
-          location: 'Warehouse A - Section 2',
-          batchNumber: 'LB240110002',
-          expiryDate: '2025-05-10',
-          quality: 'A+',
-          monthlyConsumption: 250,
-          image: '/placeholder-bidi.jpg'
-        },
-        {
-          id: 3,
-          name: 'Lion Bidi Economy',
-          sku: 'LB-ECONOMY-003',
-          category: 'Economy',
-          currentStock: 0,
-          minStock: 300,
-          maxStock: 3000,
-          reorderPoint: 450,
-          unitCost: 1.80,
-          sellingPrice: 2.75,
-          supplier: 'Budget Materials Ltd',
-          lastRestocked: '2024-12-01',
-          status: 'out_of_stock',
-          location: 'Warehouse B - Section 1',
-          batchNumber: 'LB241201003',
-          expiryDate: '2025-04-01',
-          quality: 'B',
-          monthlyConsumption: 600,
-          image: '/placeholder-bidi.jpg'
-        },
-        {
-          id: 4,
-          name: 'Raw Tobacco Leaves',
-          sku: 'RAW-TOBACCO-001',
-          category: 'Raw Materials',
-          currentStock: 875,
-          minStock: 500,
-          maxStock: 2000,
-          reorderPoint: 750,
-          unitCost: 45.00,
-          sellingPrice: 0, // Raw materials don't have selling price
-          supplier: 'Tobacco Farmers Coop',
-          lastRestocked: '2024-12-12',
-          status: 'active',
-          location: 'Raw Materials Storage',
-          batchNumber: 'TB241212001',
-          expiryDate: '2025-08-12',
-          quality: 'A',
-          monthlyConsumption: 400,
-          image: '/placeholder-tobacco.jpg'
-        },
-        {
-          id: 5,
-          name: 'Packaging Papers',
-          sku: 'PKG-PAPER-001',
-          category: 'Packaging',
-          currentStock: 45,
-          minStock: 100,
-          maxStock: 1000,
-          reorderPoint: 150,
-          unitCost: 0.15,
-          sellingPrice: 0,
-          supplier: 'Paper Mills Inc',
-          lastRestocked: '2024-12-08',
-          status: 'critical',
-          location: 'Packaging Storage',
-          batchNumber: 'PP241208001',
-          expiryDate: '2025-12-08',
-          quality: 'A',
-          monthlyConsumption: 200,
-          image: '/placeholder-paper.jpg'
-        }
-      ]);
+  // Data initialization
+useEffect(() => {
+  const loadInventoryData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchProductInventory();
+      if (response.success) {
+        setProducts(response.products);
+      } else {
+        showToast('Failed to load inventory data', 'error');
+      }
+    } catch (error) {
+      console.error('Error loading inventory:', error);
+      showToast('Error loading inventory data', 'error');
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
 
-  const getStatusColor = (status, currentStock, minStock, reorderPoint) => {
-    if (status === 'out_of_stock' || currentStock === 0) {
+  loadInventoryData();
+}, [fetchProductInventory, showToast]);
+  
+
+  const getStatusColor = (currentStock, minStock, reorderPoint) => {
+    if (currentStock === 0) {
       return 'bg-red-100 text-red-800';
-    } else if (status === 'critical' || currentStock < minStock) {
+    } else if (currentStock < minStock) {
       return 'bg-red-100 text-red-800';
-    } else if (status === 'low_stock' || currentStock <= reorderPoint) {
+    } else if (currentStock <= reorderPoint) {
       return 'bg-yellow-100 text-yellow-800';
     } else {
       return 'bg-green-100 text-green-800';
     }
   };
 
-  const getStatusIcon = (status, currentStock, minStock) => {
-    if (status === 'out_of_stock' || currentStock === 0) {
+  const getStatusIcon = (currentStock, minStock, reorderPoint) => {
+    if (currentStock === 0) {
       return <XCircle className="w-4 h-4" />;
-    } else if (status === 'critical' || currentStock < minStock) {
+    } else if (currentStock < minStock) {
       return <AlertTriangle className="w-4 h-4" />;
-    } else if (status === 'low_stock') {
+    } else if (currentStock <= reorderPoint) {
       return <AlertCircle className="w-4 h-4" />;
     } else {
       return <CheckCircle className="w-4 h-4" />;
     }
   };
 
-  const getStockLevel = (currentStock, minStock, reorderPoint) => {
+  const getStatusText = (currentStock, minStock, reorderPoint) => {
     if (currentStock === 0) return 'Out of Stock';
     if (currentStock < minStock) return 'Critical';
     if (currentStock <= reorderPoint) return 'Low Stock';
     return 'In Stock';
   };
 
-  const updateStock = (productId, type, quantity, notes) => {
-    setProducts(products.map(product => {
-      if (product.id === productId) {
-        const newStock = type === 'add' 
-          ? product.currentStock + parseInt(quantity)
-          : product.currentStock - parseInt(quantity);
-        
-        let newStatus = 'active';
-        if (newStock === 0) newStatus = 'out_of_stock';
-        else if (newStock < product.minStock) newStatus = 'critical';
-        else if (newStock <= product.reorderPoint) newStatus = 'low_stock';
+  const updateStock = async (productId, type, quantity, notes) => {
+  if (!quantity || quantity <= 0) return;
 
-        return {
-          ...product,
-          currentStock: Math.max(0, newStock),
-          status: newStatus,
-          lastRestocked: new Date().toISOString().split('T')[0]
-        };
-      }
-      return product;
-    }));
-    
-    setShowStockUpdate(false);
-    setSelectedProduct(null);
-    setStockUpdateData({ type: 'add', quantity: '', notes: '' });
-  };
+  try {
+    const response = await updateProductStock(productId, {
+      type,
+      quantity: parseInt(quantity),
+      notes
+    });
+
+    if (response.success) {
+      // Update local state
+      setProducts(products.map(product => {
+        if (product.id === productId) {
+          const newStock = type === 'add' 
+            ? product.currentStock + parseInt(quantity)
+            : Math.max(0, product.currentStock - parseInt(quantity));
+          
+          let newStatus = 'active';
+          if (newStock === 0) newStatus = 'out_of_stock';
+          else if (newStock < product.minStock) newStatus = 'critical';
+          else if (newStock <= product.reorderPoint) newStatus = 'low_stock';
+
+          return {
+            ...product,
+            currentStock: newStock,
+            status: newStatus,
+            lastRestocked: new Date().toISOString().split('T')[0]
+          };
+        }
+        return product;
+      }));
+
+      showToast('Stock updated successfully', 'success');
+    } else {
+      showToast('Failed to update stock', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating stock:', error);
+    showToast('Error updating stock', 'error');
+  }
+  
+  setShowStockUpdate(false);
+  setSelectedProduct(null);
+  setStockUpdateData({ type: 'add', quantity: '', notes: '' });
+};
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
@@ -234,7 +157,10 @@ const AdminInventory = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading inventory...</p>
+        </div>
       </div>
     );
   }
@@ -248,10 +174,7 @@ const AdminInventory = () => {
           <p className="text-gray-600">{totalProducts} products in inventory</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => setShowAddProduct(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
+          <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             Add Product
           </button>
@@ -381,11 +304,9 @@ const AdminInventory = () => {
                 <tr key={product.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="h-10 w-10 rounded-lg object-cover bg-gray-200"
-                      />
+                      <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <Archive className="w-5 h-5 text-gray-500" />
+                      </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
                         <div className="text-sm text-gray-500">SKU: {product.sku}</div>
@@ -407,9 +328,9 @@ const AdminInventory = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(product.status, product.currentStock, product.minStock, product.reorderPoint)}`}>
-                      {getStatusIcon(product.status, product.currentStock, product.minStock)}
-                      <span className="ml-1">{getStockLevel(product.currentStock, product.minStock, product.reorderPoint)}</span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(product.currentStock, product.minStock, product.reorderPoint)}`}>
+                      {getStatusIcon(product.currentStock, product.minStock, product.reorderPoint)}
+                      <span className="ml-1">{getStatusText(product.currentStock, product.minStock, product.reorderPoint)}</span>
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -567,9 +488,7 @@ const AdminInventory = () => {
 
               <div className="flex justify-between items-center mt-6">
                 <button
-                  onClick={() => {
-                    setShowStockUpdate(true);
-                  }}
+                  onClick={() => setShowStockUpdate(true)}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <Edit className="w-4 h-4 mr-2" />
