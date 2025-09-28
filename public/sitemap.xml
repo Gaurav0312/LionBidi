@@ -5,56 +5,140 @@
   <!-- Public Pages -->
   <url>
     <loc>https://www.lionbidi.shop/</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.lionbidi.shop/products</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.lionbidi.shop/about</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.lionbidi.shop/contact</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.lionbidi.shop/privacy-policy</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.lionbidi.shop/terms</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.lionbidi.shop/refund-policy</loc>
+    <lastmod>2025-09-28</lastmod>
+    <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Product Pages -->
+  <!-- Product Pages with Detailed Image Information -->
   <url>
     <loc>https://www.lionbidi.shop/product/special-lion-bidi-big</loc>
-    <image:image>
-      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg</image:loc>
-      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817934/Big_niemxu.jpg</image:loc>
-      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817922/Bidi_iz0x7a.jpg</image:loc>
-      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817983/Top_qpiobl.jpg</image:loc>
-    </image:image>
     <lastmod>2025-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg</image:loc>
+      <image:caption>Lion Bidi Special Big - Premium Hand-rolled Tobacco Bidi - Authentic Taste Experience</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Special Big Premium Hand-rolled Tobacco Product</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
+    
+    <!-- <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817964/Pack_sn7kgz.png</image:loc>
+      <image:caption>Lion Bidi Premium Pack - 20 Pieces per Pack - Hand-crafted Quality Tobacco</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Premium Pack Packaging Design</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image> -->
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1759049178/Lion_Bidi_Big_isbnrz.jpg</image:loc>
+      <image:caption>Lion Bidi Big Size - Superior Quality Tobacco Leaves - Artisan Rolled Experience</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Big Size Premium Tobacco Product</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817922/Bidi_iz0x7a.jpg</image:loc>
+      <image:caption>Lion Bidi Hand-rolled Traditional Tobacco - Authentic Indian Bidi Experience</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Traditional Hand-rolled Tobacco Product</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817983/Top_qpiobl.jpg</image:loc>
+      <image:caption>Lion Bidi Top View - Premium Tobacco Leaves - Hand-crafted Quality Smoking Product</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Top View Hand-crafted Premium Quality</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
   </url>
 
   <url>
     <loc>https://www.lionbidi.shop/product/special-lion-bidi-small</loc>
-    <image:image>
-      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1757644249/LionBidiSmall_cq01ov.jpg</image:loc>
-      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817974/Small_qo6ylj.jpg</image:loc>
-    </image:image>
     <lastmod>2025-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1757644249/LionBidiSmall_cq01ov.jpg</image:loc>
+      <image:caption>Lion Bidi Special Small - Compact Premium Hand-rolled Tobacco Bidi - Perfect Trial Size</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Special Small Premium Tobacco Product</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
+    
+    <!-- <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817964/Pack_sn7kgz.png</image:loc>
+      <image:caption>Lion Bidi Small Pack - Premium Quality Tobacco Products - Hand-rolled Authenticity</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Small Pack Premium Quality Design</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image> -->
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1759049203/Lion_Bidi_Small_fkoy06.jpg</image:loc>
+      <image:caption>Lion Bidi Small Size - Premium Tobacco Leaves - Artisan Crafted Smoking Experience</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Small Size Artisan Crafted Quality</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817922/Bidi_iz0x7a.jpg</image:loc>
+      <image:caption>Lion Bidi Traditional Hand-rolled - Authentic Indian Tobacco Experience - Premium Quality</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Traditional Hand-rolled Authentic Experience</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
+    
+    <image:image>
+      <image:loc>https://res.cloudinary.com/dxqerqng1/image/upload/v1754817983/Top_qpiobl.jpg</image:loc>
+      <image:caption>Lion Bidi Premium View - Hand-crafted Tobacco Leaves - Superior Quality Smoking Product</image:caption>
+      <image:geo_location>India</image:geo_location>
+      <image:title>Lion Bidi Premium View Superior Quality Craftsmanship</image:title>
+      <image:license>https://www.lionbidi.shop/terms</image:license>
+    </image:image>
   </url>
 
 </urlset>
