@@ -51,7 +51,7 @@ const productData = {
       "Experience the authentic natural taste with our Premium Special Lion Bidi (Big). Handcrafted with the finest tobacco leaves for the ultimate smoking experience. Each bidi is hand-rolled by skilled artisans, guaranteeing a consistent and impeccably crafted product.",
     images: [
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1757644152/LionBidi_z4lirw.jpg",
-      "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817964/Pack_sn7kgz.png", // In real app, these would be different angles
+      "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817964/Pack_sn7kgz.png",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817922/Bidi_iz0x7a.jpg",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817934/Big_niemxu.jpg",
       "https://res.cloudinary.com/dxqerqng1/image/upload/v1754817983/Top_qpiobl.jpg",
@@ -219,6 +219,21 @@ const ProductDetailPage = () => {
     }
   }, [slug]);
 
+  useEffect(() => {
+  if (currentProduct) {
+    // Add structured data to page
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(generateProductSchema(currentProduct));
+    document.head.appendChild(script);
+    
+    return () => {
+      // Cleanup
+      document.head.removeChild(script);
+    };
+  }
+}, [currentProduct]);
+
   // Loading state
   if (loading) {
     return (
@@ -320,7 +335,7 @@ const ProductDetailPage = () => {
         discountPrice: currentProduct.price,
         originalPrice: currentProduct.originalPrice,
         image: currentProduct.images?.[0] || currentProduct.image,
-        
+
         benefits: undefined,
         specifications: undefined,
         features: currentProduct.features?.filter((f) => typeof f === "string"),
@@ -463,6 +478,49 @@ const ProductDetailPage = () => {
       },
     });
   };
+
+  const generateProductSchema = (product) => {
+    return {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      name: product.name,
+      description: product.description,
+      brand: {
+        "@type": "Brand",
+        name: "Lion Bidi",
+      },
+      image: product.images || [product.image],
+      url: `https://www.lionbidi.shop/product/${product.slug}`,
+      sku: product.id,
+      offers: {
+        "@type": "Offer",
+        price: product.price,
+        priceCurrency: "INR",
+        availability: product.inStock
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+        url: `https://www.lionbidi.shop/product/${product.slug}`,
+        seller: {
+          "@type": "Organization",
+          name: "Lion Bidi",
+          url: "https://www.lionbidi.shop",
+        },
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating,
+        reviewCount: product.reviewCount,
+        bestRating: "5",
+        worstRating: "1",
+      },
+      category: "Tobacco Products",
+      keywords:
+        "lion bidi, premium bidi, hand-rolled bidi, tobacco products, smoking accessories",
+    };
+  };
+
+  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50">
       {/* Cart Message */}
@@ -581,8 +639,15 @@ const ProductDetailPage = () => {
                       ? currentProduct.images[selectedImageIndex]
                       : currentProduct.image
                   }
-                  alt={currentProduct.name}
+                  alt={`${currentProduct.name} - Premium Hand-rolled Lion Bidi - Buy Online at LionBidi.shop`}
+                  title={`${currentProduct.name} | Lion Bidi | Hand-crafted Premium Tobacco`}
                   className="w-full h-full object-cover"
+                  // SEO attributes
+                  itemProp="image"
+                  loading="lazy"
+                  decoding="async"
+                  // Open Graph meta for social sharing
+                  property="og:image"
                 />
               </div>
 
@@ -636,7 +701,9 @@ const ProductDetailPage = () => {
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    aria-label={`View image ${index + 1}`}
+                    aria-label={`View ${currentProduct.name} image ${
+                      index + 1
+                    } - Lion Bidi Premium Product`}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all focus:outline-none focus:ring-2 focus:ring-orange-200 ${
                       selectedImageIndex === index
                         ? "border-orange-500 ring-2 ring-orange-200"
@@ -645,8 +712,15 @@ const ProductDetailPage = () => {
                   >
                     <img
                       src={image}
-                      alt={`Product view ${index + 1}`}
+                      alt={`${currentProduct.name} view ${
+                        index + 1
+                      } - Lion Bidi hand-rolled premium bidi`}
+                      title={`Lion Bidi ${currentProduct.name} - View ${
+                        index + 1
+                      }`}
                       className="w-full h-full object-cover"
+                      itemProp="image"
+                      loading="lazy"
                     />
                   </button>
                 ))}
