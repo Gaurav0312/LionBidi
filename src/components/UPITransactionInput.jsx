@@ -250,7 +250,7 @@ const UPITransactionInput = ({
       {/* Security notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
         <div className="flex items-start">
-          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 text-divine-orange mt-0.5 mr-2 flex-shrink-0" />
           <div className="text-sm text-amber-800">
             <strong>Security Note:</strong> Each transaction ID can only be used once. 
             We'll verify your payment within 1 hours before confirming your order.
