@@ -340,8 +340,7 @@ const HomePage = () => {
                     When you <strong>buy bidi online</strong> from Lion Bidi,
                     you get unmatched quality, authentic natural taste, and the
                     convenience of fast doorstep delivery across all major
-                    Indian cities including Mumbai, Delhi, Bangalore, Chennai,
-                    Kolkata, and Pune.
+                    Indian cities.
                   </p>
                   <p className="text-gray-600 text-lg leading-relaxed">
                     Our commitment to traditional tobacco crafting methods
