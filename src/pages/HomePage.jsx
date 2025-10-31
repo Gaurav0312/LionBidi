@@ -167,7 +167,7 @@ const HomePage = () => {
                 <div className="w-full space-y-6 sm:space-y-8 pt-20 sm:pt-16 lg:pt-0">
                   <div className="space-y-4 sm:space-y-6">
                     <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-800">
-                      <span className="text-divine-orange mb-6 mt-6 font-extrabold block">
+                      <span className="text-divine-orange mb-6 mt-2 font-extrabold block">
                         Buy Bidi Online
                       </span>
                       <span className="text-divine-orange mb-6 font-extrabold block">
