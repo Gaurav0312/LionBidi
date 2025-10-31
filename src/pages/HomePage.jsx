@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Truck, ShoppingCart, Star, Shield, Phone, MapPin } from "lucide-react";
-import { useAppContext } from "../context/AppContext";
+import { Truck, ShoppingCart, Shield } from "lucide-react";
 import { sampleProducts } from "../data/sampleProducts";
 import ProductCard from "../components/ProductCard";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +8,6 @@ import SEO from "../components/SEO";
 // Enhanced SEO HomePage Component for Lion Bidi
 const HomePage = () => {
   const navigate = useNavigate();
-  const { setCurrentPage } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const bestsellers = sampleProducts.filter((p) => p.bestseller);
 
@@ -134,6 +132,7 @@ const HomePage = () => {
                       priceCurrency: "INR",
                       price: product.price,
                       availability: "https://schema.org/InStock",
+                      priceValidUntil: "2026-10-31",
                     },
                     aggregateRating: {
                       "@type": "AggregateRating",
@@ -168,10 +167,10 @@ const HomePage = () => {
                 <div className="w-full space-y-6 sm:space-y-8 pt-20 sm:pt-16 lg:pt-0">
                   <div className="space-y-4 sm:space-y-6">
                     <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-800">
-                      <span className="text-divine-orange mb-6 font-extrabold block">
+                      <span className="text-divine-orange mb-6 mt-6 font-extrabold block">
                         Buy Bidi Online
                       </span>
-                      <span className="text-divine-orange mb-4 font-extrabold block">
+                      <span className="text-divine-orange mb-6 font-extrabold block">
                         India | Lion Bidi
                       </span>
                       <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl block mt-2">
@@ -276,6 +275,15 @@ const HomePage = () => {
                           </div> */}
                           {/* <span className="text-gray-500 text-sm">(4.5/5) - 150+ Reviews</span> */}
                         </div>
+                        <button
+                          onClick={() =>
+                            handleNavigate("/product/special-lion-bidi-big")
+                          }
+                          className="w-full bg-divine-orange hover:bg-divine-orange/90 text-white font-semibold py-3 px-6 rounded-lg text-base transition-all duration-300 hover:shadow-lg !mt-6"
+                          aria-label="View Special Lion Bidi (Big Pack)"
+                        >
+                          View Product
+                        </button>
                       </div>
                     </div>
                   </div>
