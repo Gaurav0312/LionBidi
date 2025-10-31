@@ -508,7 +508,7 @@ const Header = () => {
             {/* MOBILE ACTIONS */}
             <div className="flex items-center lg:hidden space-x-1">
               {/* Mobile Search */}
-              {/* <button
+              <button
                 onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
                 className={`p-2.5 rounded-xl transition-all ${
                   isMobileSearchOpen
@@ -517,7 +517,7 @@ const Header = () => {
                 } shadow`}
               >
                 <Search size={18} />
-              </button> */}
+              </button>
 
               {/* Wishlist */}
               {user && (
