@@ -30,7 +30,7 @@ const CheckoutPage = () => {
     openAuthModal,
     removeFromCart,
     updateCartItemQuantity,
-    clearCart 
+    clearCart,
   } = useAppContext();
 
   const product = location.state?.product;
@@ -137,12 +137,11 @@ const CheckoutPage = () => {
   // Create order when page loads if not already created
   useEffect(() => {
     const createOrder = async () => {
-
       if (existingOrder) {
-      console.log("Using existing order:", existingOrder);
-      setCreatedOrder(existingOrder);
-      return;
-    }
+        console.log("Using existing order:", existingOrder);
+        setCreatedOrder(existingOrder);
+        return;
+      }
       // More robust validation
       if (!user) {
         console.log("User not authenticated, cannot create order");
@@ -218,13 +217,13 @@ const CheckoutPage = () => {
           );
 
           try {
-          console.log('🛒 Clearing cart after successful order creation');
-          await clearCart();
-          console.log('✅ Cart cleared successfully after order creation');
-        } catch (clearError) {
-          console.error('❌ Error clearing cart:', clearError);
-          // Don't fail the order creation if cart clearing fails
-        }
+            console.log("🛒 Clearing cart after successful order creation");
+            await clearCart();
+            console.log("✅ Cart cleared successfully after order creation");
+          } catch (clearError) {
+            console.error("❌ Error clearing cart:", clearError);
+            // Don't fail the order creation if cart clearing fails
+          }
         } else {
           throw new Error(response.data.message || "Order creation failed");
         }
@@ -258,7 +257,15 @@ const CheckoutPage = () => {
     const timer = setTimeout(createOrder, 500);
 
     return () => clearTimeout(timer);
-  }, [user, cart?.total, addressData?.name, createdOrder, isCreatingOrder, clearCart, existingOrder]);
+  }, [
+    user,
+    cart?.total,
+    addressData?.name,
+    createdOrder,
+    isCreatingOrder,
+    clearCart,
+    existingOrder,
+  ]);
 
   // Redirect if no data
   useEffect(() => {
@@ -898,19 +905,31 @@ const CheckoutPage = () => {
               {/* Pay Button */}
               <a
                 href={upiLink}
-                onClick={handlePaymentMade}
+                onClick={(e) => {
+                  if (!isMobile) {
+                    handlePaymentMade();
+                  }
+                }}
                 className="block w-full bg-green-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
               >
                 Pay ₹{totalPrice.toFixed(2)} Now
               </a>
 
-              {/* Payment Made Button */}
-              {createdOrder && (
+              {createdOrder && !isMobile && (
                 <button
                   onClick={handlePaymentMade}
                   className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
                 >
                   I Have Made the Payment
+                </button>
+              )}
+
+              {createdOrder && isMobile && (
+                <button
+                  onClick={handlePaymentMade}
+                  className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                >
+                  Submit Payment Details
                 </button>
               )}
 
