@@ -54,6 +54,7 @@ const CheckoutPage = () => {
   const [paymentScreenshot, setPaymentScreenshot] = useState(null);
   const [transactionId, setTransactionId] = useState("");
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+  const [mobilePaymentAttempted, setMobilePaymentAttempted] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [orderCreationError, setOrderCreationError] = useState(null);
 
@@ -906,30 +907,65 @@ const CheckoutPage = () => {
               <a
                 href={upiLink}
                 onClick={(e) => {
-                  if (!isMobile) {
+                  if (isMobile) {
+                    setMobilePaymentAttempted(true);
+                  } else {
                     handlePaymentMade();
                   }
                 }}
-                className="block w-full bg-green-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
+                className="block w-full bg-[#FF6B35] hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
               >
                 Pay ₹{totalPrice.toFixed(2)} Now
               </a>
 
+              {/* Mobile: Show options after payment attempt */}
+              {createdOrder && isMobile && mobilePaymentAttempted && (
+                <div className="space-y-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                    <p className="font-medium mb-1">
+                      Did you complete the payment?
+                    </p>
+                    <p className="text-xs">
+                      If successful, click "Payment Completed" to submit your
+                      transaction details.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handlePaymentMade}
+                      className="flex-1 bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-4 rounded-xl transition-colors"
+                    >
+                      Payment Completed ✓
+                    </button>
+
+                    <button
+                      onClick={() => setMobilePaymentAttempted(false)}
+                      className="px-4 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                      title="Try payment again"
+                    >
+                      Retry Payment
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile: Show Pay button if payment not yet attempted */}
+              {createdOrder && isMobile && !mobilePaymentAttempted && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                  <p>
+                    👆 Click "Pay Now" above to complete your payment via UPI
+                  </p>
+                </div>
+              )}
+
+              {/* Desktop: Show form trigger button */}
               {createdOrder && !isMobile && (
                 <button
                   onClick={handlePaymentMade}
                   className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
                 >
                   I Have Made the Payment
-                </button>
-              )}
-
-              {createdOrder && isMobile && (
-                <button
-                  onClick={handlePaymentMade}
-                  className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
-                >
-                  Submit Payment Details
                 </button>
               )}
 
