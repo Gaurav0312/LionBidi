@@ -870,7 +870,7 @@ const CheckoutPage = () => {
                         {deliveryInfo.isFreeDelivery ? (
                           <div className="mt-1">
                             <p className="text-xs text-green-600 font-semibold">
-                              🎉 FREE Delivery Applied!
+                              FREE Delivery Applied!
                             </p>
                             <p className="text-xs text-gray-500">
                               Orders above ₹{deliveryInfo.freeDeliveryThreshold}{" "}
