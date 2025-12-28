@@ -82,41 +82,44 @@ const AddressPage = () => {
   }, [user]);
 
   const calculateDeliveryCharges = async (pincode) => {
-  if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
-    setDeliveryCharges(0);
-    setDeliveryInfo(null);
-    return;
-  }
-
-  setIsCalculatingDelivery(true);
-  try {
-    // ✅ Calculate order amount
-    const orderAmount = cartFromState?.total || 
-      (productFromState ? productFromState.price * productFromState.quantity : 0);
-
-    // ✅ Send both pincode AND orderAmount
-    const response = await api.post("/api/delivery/calculate", { 
-      pincode,
-      orderAmount  // Add this!
-    });
-
-    if (response.data.success) {
-      setDeliveryCharges(response.data.deliveryInfo.charges);
-      setDeliveryInfo(response.data.deliveryInfo);
-      console.log("Delivery charges calculated:", response.data.deliveryInfo);
+    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+      setDeliveryCharges(0);
+      setDeliveryInfo(null);
+      return;
     }
-  } catch (error) {
-    console.error("Error calculating delivery charges:", error);
-    // Set default charges on error
-    setDeliveryCharges(120);  // Changed from 150 to 120
-    setDeliveryInfo({
-      charges: 120,
-      description: "Standard delivery charges",
-    });
-  } finally {
-    setIsCalculatingDelivery(false);
-  }
-};
+
+    setIsCalculatingDelivery(true);
+    try {
+      // ✅ Calculate order amount
+      const orderAmount =
+        cartFromState?.total ||
+        (productFromState
+          ? productFromState.price * productFromState.quantity
+          : 0);
+
+      // ✅ Send both pincode AND orderAmount
+      const response = await api.post("/api/delivery/calculate", {
+        pincode,
+        orderAmount, // Add this!
+      });
+
+      if (response.data.success) {
+        setDeliveryCharges(response.data.deliveryInfo.charges);
+        setDeliveryInfo(response.data.deliveryInfo);
+        console.log("Delivery charges calculated:", response.data.deliveryInfo);
+      }
+    } catch (error) {
+      console.error("Error calculating delivery charges:", error);
+      // Set default charges on error
+      setDeliveryCharges(120); // Changed from 150 to 120
+      setDeliveryInfo({
+        charges: 120,
+        description: "Standard delivery charges",
+      });
+    } finally {
+      setIsCalculatingDelivery(false);
+    }
+  };
 
   // Debounced pincode lookup
   const fetchLocationFromPincode = useCallback(async (pincode) => {
@@ -744,17 +747,62 @@ const AddressPage = () => {
                           <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></div>
                         )}
                       </div>
-                      <span className="font-medium text-orange-600">
-                        ₹{deliveryCharges.toFixed(2)}
+                      <span
+                        className={`font-medium ${
+                          deliveryInfo.isFreeDelivery
+                            ? "text-green-600 line-through"
+                            : "text-orange-600"
+                        }`}
+                      >
+                        {deliveryInfo.isFreeDelivery ? (
+                          <>
+                            <span className="mr-2">
+                              ₹{deliveryInfo.baseCharges.toFixed(2)}
+                            </span>
+                            <span className="text-green-600 font-bold no-underline">
+                              FREE
+                            </span>
+                          </>
+                        ) : (
+                          `₹${deliveryCharges.toFixed(2)}`
+                        )}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mb-2">
-                      {deliveryInfo.description}
-                    </p>
-                    {deliveryInfo.state && (
-                      <p className="text-xs text-gray-500">
-                        To: {deliveryInfo.district}, {deliveryInfo.state}
-                      </p>
+
+                    {deliveryInfo.isFreeDelivery ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-2 mb-2">
+                        <p className="text-xs text-green-700 font-semibold flex items-center">
+                          🎉 Congratulations! You've earned FREE delivery
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">
+                          Orders above ₹{deliveryInfo.freeDeliveryThreshold}{" "}
+                          qualify for free delivery
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs text-gray-500 mb-2">
+                          {deliveryInfo.description}
+                        </p>
+                        {deliveryInfo.state && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            To: {deliveryInfo.district}, {deliveryInfo.state}
+                          </p>
+                        )}
+                        {/* Show how much more needed for free delivery */}
+                        {deliveryInfo.freeDeliveryThreshold &&
+                          cartTotal < deliveryInfo.freeDeliveryThreshold && (
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                              <p className="text-xs text-orange-700">
+                                💡 Add ₹
+                                {(
+                                  deliveryInfo.freeDeliveryThreshold - cartTotal
+                                ).toFixed(2)}{" "}
+                                more to get FREE delivery!
+                              </p>
+                            </div>
+                          )}
+                      </>
                     )}
                   </div>
                 )}
