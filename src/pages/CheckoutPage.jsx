@@ -13,7 +13,6 @@ import {
   Plus,
   MapPin,
   Edit3,
-  Upload,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { useAppContext } from "../context/AppContext";
@@ -37,6 +36,8 @@ const CheckoutPage = () => {
   const staticCart = location.state?.cart || location.state?.staticCart;
 
   const addressData = location.state?.address;
+  const deliveryCharges = addressData?.deliveryCharges || 0;
+  const deliveryInfo = addressData?.deliveryInfo || null;
   const savedToDb = location.state?.savedToDb;
   const fallback = location.state?.fallback;
   const existingOrder = location.state?.existingOrder;
@@ -188,6 +189,7 @@ const CheckoutPage = () => {
             subtotal: cart.subtotal || cart.total,
             savings: cart.savings || 0,
             itemCount: cart.items.length,
+            deliveryCharges: deliveryCharges,
           },
           shippingAddress: {
             name: addressData.name,
@@ -202,6 +204,8 @@ const CheckoutPage = () => {
             country: "India",
           },
           paymentMethod: "UPI",
+          deliveryCharges: deliveryCharges,
+          deliveryInfo: deliveryInfo,
         };
 
         console.log("Sending order data:", orderData);
@@ -476,9 +480,10 @@ const CheckoutPage = () => {
     );
   }
 
-  const totalPrice = product
+  const subtotalPrice = product
     ? product.price * product.quantity
     : cart?.total || 0;
+  const totalPrice = subtotalPrice + deliveryCharges;
   const upiId = "9589773525@ptsbi";
   const upiName = "Gaurav Verma";
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
@@ -850,8 +855,77 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
-                <span className="text-gray-700 font-semibold">Total</span>
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-gray-700">Order Amount:</span>
+                  <span className="font-medium">
+                    ₹{subtotalPrice.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <span className="text-gray-700">Delivery:</span>
+                    {deliveryInfo && (
+                      <>
+                        {deliveryInfo.isFreeDelivery ? (
+                          <div className="mt-1">
+                            <p className="text-xs text-green-600 font-semibold">
+                              🎉 FREE Delivery Applied!
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Orders above ₹{deliveryInfo.freeDeliveryThreshold}{" "}
+                              qualify
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {deliveryInfo.description}
+                              {deliveryInfo.state &&
+                                ` to ${deliveryInfo.state}`}
+                            </p>
+                            {deliveryInfo.freeDeliveryThreshold &&
+                              subtotalPrice <
+                                deliveryInfo.freeDeliveryThreshold && (
+                                <p className="text-xs text-orange-600 mt-1">
+                                  💡 Add ₹
+                                  {(
+                                    deliveryInfo.freeDeliveryThreshold -
+                                    subtotalPrice
+                                  ).toFixed(2)}{" "}
+                                  more for FREE delivery!
+                                </p>
+                              )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <span
+                    className={`font-medium ml-3 ${
+                      deliveryInfo?.isFreeDelivery
+                        ? "text-green-600"
+                        : "text-orange-600"
+                    }`}
+                  >
+                    {deliveryInfo?.isFreeDelivery ? (
+                      <span className="flex flex-col items-end">
+                        <span className="text-xs text-gray-400 line-through">
+                          ₹{deliveryInfo.baseCharges}
+                        </span>
+                        <span className="font-bold">FREE</span>
+                      </span>
+                    ) : (
+                      `₹${deliveryCharges.toFixed(2)}`
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 mt-3 flex justify-between items-center">
+                <span className="text-gray-700 font-semibold">
+                  Total Amount
+                </span>
                 <span className="text-2xl font-bold text-divine-orange">
                   ₹{totalPrice.toFixed(2)}
                 </span>

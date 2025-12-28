@@ -42,7 +42,10 @@ const AddressPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPinCodeLoading, setIsPinCodeLoading] = useState(false);
   const [pinCodeSuggestions, setPinCodeSuggestions] = useState([]);
-  const [pinCodeStatus, setPinCodeStatus] = useState(""); // 'valid', 'invalid', or ''
+  const [pinCodeStatus, setPinCodeStatus] = useState("");
+  const [deliveryCharges, setDeliveryCharges] = useState(0);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
 
   // Redirect if no cart or product data
   useEffect(() => {
@@ -77,6 +80,43 @@ const AddressPage = () => {
 
     loadExistingAddress();
   }, [user]);
+
+  const calculateDeliveryCharges = async (pincode) => {
+  if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+    setDeliveryCharges(0);
+    setDeliveryInfo(null);
+    return;
+  }
+
+  setIsCalculatingDelivery(true);
+  try {
+    // ✅ Calculate order amount
+    const orderAmount = cartFromState?.total || 
+      (productFromState ? productFromState.price * productFromState.quantity : 0);
+
+    // ✅ Send both pincode AND orderAmount
+    const response = await api.post("/api/delivery/calculate", { 
+      pincode,
+      orderAmount  // Add this!
+    });
+
+    if (response.data.success) {
+      setDeliveryCharges(response.data.deliveryInfo.charges);
+      setDeliveryInfo(response.data.deliveryInfo);
+      console.log("Delivery charges calculated:", response.data.deliveryInfo);
+    }
+  } catch (error) {
+    console.error("Error calculating delivery charges:", error);
+    // Set default charges on error
+    setDeliveryCharges(120);  // Changed from 150 to 120
+    setDeliveryInfo({
+      charges: 120,
+      description: "Standard delivery charges",
+    });
+  } finally {
+    setIsCalculatingDelivery(false);
+  }
+};
 
   // Debounced pincode lookup
   const fetchLocationFromPincode = useCallback(async (pincode) => {
@@ -115,10 +155,15 @@ const AddressPage = () => {
         } else {
           setPinCodeSuggestions([]);
         }
+
+        // Calculate delivery charges after successful pincode validation
+        await calculateDeliveryCharges(pincode);
       } else {
         setPinCodeStatus("invalid");
         setFormData((prev) => ({ ...prev, city: "", state: "" }));
         setPinCodeSuggestions([]);
+        setDeliveryCharges(0);
+        setDeliveryInfo(null);
       }
     } catch (error) {
       console.error("Error fetching pincode data:", error);
@@ -197,8 +242,7 @@ const AddressPage = () => {
     try {
       console.log("Saving address to MongoDB...");
 
-      // Save address to MongoDB via API
-      const response = await api.post("/api/address/save", {
+      const addressPayload = {
         name: formData.name,
         mobileNumber: formData.mobileNumber,
         emailAddress: formData.emailAddress,
@@ -208,31 +252,35 @@ const AddressPage = () => {
         pinCode: formData.pinCode,
         city: formData.city,
         state: formData.state,
-      });
+        deliveryCharges: deliveryCharges, // Include delivery charges
+        deliveryInfo: deliveryInfo, // Include delivery info
+      };
+
+      const response = await api.post("/api/address/save", addressPayload);
 
       if (response.data.success) {
         console.log("Address saved successfully to MongoDB");
 
-        // Refresh address in context
         if (fetchUserAddress) {
           fetchUserAddress();
         }
 
-        // Also save to localStorage as backup
         localStorage.setItem(
           "deliveryAddress",
           JSON.stringify({
             ...formData,
+            deliveryCharges,
+            deliveryInfo,
             timestamp: new Date().toISOString(),
           })
         );
 
-        // Navigate to checkout with cart/product data AND address
+        // Navigate to checkout with delivery charges
         if (cartFromState) {
           navigate("/checkout", {
             state: {
               cart: cartFromState,
-              address: formData,
+              address: { ...formData, deliveryCharges, deliveryInfo },
               savedToDb: true,
             },
           });
@@ -240,7 +288,7 @@ const AddressPage = () => {
           navigate("/checkout", {
             state: {
               product: productFromState,
-              address: formData,
+              address: { ...formData, deliveryCharges, deliveryInfo },
               savedToDb: true,
             },
           });
@@ -251,34 +299,33 @@ const AddressPage = () => {
     } catch (error) {
       console.error("Error saving address to MongoDB:", error);
 
-      // Show user-friendly error message
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Failed to save address. Please try again.";
       alert(errorMessage);
 
-      // If it's a validation error, don't proceed
       if (error.response?.status === 400) {
         return;
       }
 
-      // For other errors, save locally and proceed (fallback)
+      // Fallback with delivery charges
       console.log("Falling back to local storage...");
       localStorage.setItem(
         "deliveryAddress",
         JSON.stringify({
           ...formData,
+          deliveryCharges,
+          deliveryInfo,
           timestamp: new Date().toISOString(),
         })
       );
 
-      // Navigate anyway with fallback flag
       if (cartFromState) {
         navigate("/checkout", {
           state: {
             cart: cartFromState,
-            address: formData,
+            address: { ...formData, deliveryCharges, deliveryInfo },
             savedToDb: false,
             fallback: true,
           },
@@ -287,7 +334,7 @@ const AddressPage = () => {
         navigate("/checkout", {
           state: {
             product: productFromState,
-            address: formData,
+            address: { ...formData, deliveryCharges, deliveryInfo },
             savedToDb: false,
             fallback: true,
           },
@@ -686,10 +733,36 @@ const AddressPage = () => {
                   </>
                 )}
 
+                {deliveryInfo && (
+                  <div className="border-t border-gray-200 pt-3 mt-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center">
+                        <span className="text-gray-600 text-sm">
+                          Delivery Charges:
+                        </span>
+                        {isCalculatingDelivery && (
+                          <div className="ml-2 animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></div>
+                        )}
+                      </div>
+                      <span className="font-medium text-orange-600">
+                        ₹{deliveryCharges.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      {deliveryInfo.description}
+                    </p>
+                    {deliveryInfo.state && (
+                      <p className="text-xs text-gray-500">
+                        To: {deliveryInfo.district}, {deliveryInfo.state}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center text-lg font-bold border-t border-gray-200 pt-2">
                   <span>Total:</span>
                   <span className="text-divine-orange">
-                    ₹{cartTotal.toFixed(2)}
+                    ₹{(cartTotal + deliveryCharges).toFixed(2)}
                   </span>
                 </div>
               </div>
