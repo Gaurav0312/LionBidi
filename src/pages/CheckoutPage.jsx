@@ -793,7 +793,7 @@ const CheckoutPage = () => {
                             </p>
 
                             {/* Quantity Controls - Only for live cart */}
-                            {!cart.isFromStatic && !createdOrder && (
+                            {false && !cart.isFromStatic && !createdOrder && (
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() =>
