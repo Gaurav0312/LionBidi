@@ -35,7 +35,14 @@ const CheckoutPage = () => {
   const product = location.state?.product;
   const staticCart = location.state?.cart || location.state?.staticCart;
 
-  const addressData = location.state?.address;
+  const getAddressData = () => {
+    if (location.state?.address) return location.state.address;
+    
+    const stored = localStorage.getItem("deliveryAddress");
+    return stored ? JSON.parse(stored) : null;
+  };
+
+  const addressData = getAddressData();
   const deliveryCharges = addressData?.deliveryCharges || 0;
   const deliveryInfo = addressData?.deliveryInfo || null;
   const savedToDb = location.state?.savedToDb;
@@ -179,11 +186,12 @@ const CheckoutPage = () => {
         const orderData = {
           cartData: {
             items: cart.items.map((item) => ({
-              id: item._id || item.id,
+              productId: item._id || item.id,
               name: item.name,
               price: item.price,
               quantity: item.quantity,
               image: item.image,
+              totalPrice: item.price * item.quantity
             })),
             total: cart.total,
             subtotal: cart.subtotal || cart.total,
@@ -262,15 +270,7 @@ const CheckoutPage = () => {
     const timer = setTimeout(createOrder, 500);
 
     return () => clearTimeout(timer);
-  }, [
-    user,
-    cart?.total,
-    addressData?.name,
-    createdOrder,
-    isCreatingOrder,
-    clearCart,
-    existingOrder,
-  ]);
+  }, [user, cart?.total, addressData?.name, existingOrder]);
 
   // Redirect if no data
   useEffect(() => {
