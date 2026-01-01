@@ -11,7 +11,8 @@ import axios from "axios";
 
 import api from "./utils/api";
 import AppContext from "./context/AppContext";
-import { Toaster, toast } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { showCustomToast } from "./utils/toast";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -466,7 +467,7 @@ const App = () => {
       setUserAddress(null);
 
       console.log("Logout completed successfully");
-      toast.success("Logged out successfully");
+      showCustomToast("Logged out successfully", "success");
 
       // Navigate to home page
       navigate("/");
@@ -512,6 +513,7 @@ const App = () => {
 
   /* ═══════════════════════════ CART HELPERS ═══════════════════════════ */
   const addToCart = async (product, quantity = 1) => {
+    const productName = product.name || "Item";
     if (user) {
       try {
         const productId = product._id || product.id;
@@ -534,8 +536,9 @@ const App = () => {
 
         if (response.data.success) {
           setCartItems(response.data.cart || []);
+          showCustomToast(`${quantity} x ${productName} added to cart`, "success");
         } else {
-          // toast.error(response.data.message || "Failed to add to cart");
+          showCustomToast(response.data.message || "Failed to add to cart", "error");
         }
       } catch (error) {
         console.error("Add to cart error:", error);
@@ -543,7 +546,7 @@ const App = () => {
           error.response?.data?.message ||
           error.message ||
           "Failed to add to cart";
-        toast.error(errorMessage);
+        showCustomToast(errorMessage, "error");
       }
     } else {
       // Guest user logic
@@ -571,7 +574,7 @@ const App = () => {
         }
 
         localStorage.setItem("cart", JSON.stringify(updated));
-        toast.success(`${quantity} x ${product.name} added to cart`);
+        showCustomToast(`${quantity} x ${productName} added to cart`, "success");
         return updated;
       });
     }
@@ -647,16 +650,19 @@ const App = () => {
 
         if (response.data.success) {
           setCartItems(response.data.cart || []);
-          toast.success("Item removed from cart");
+          showCustomToast("Item removed from cart", "success");
         }
       } catch (error) {
         console.error("Error removing from cart:", error);
+        showCustomToast("Failed to remove item", "error");
       }
     } else {
       // Guest user logic
       setCartItems((prev) => {
         const item = prev.find((i) => (i._id || i.id) === id);
-        if (item) toast.success(`${item.name} removed from cart`);
+        if (item) {
+            showCustomToast(`${item.name} removed from cart`, "success");
+        }
         const updated = prev.filter((i) => (i._id || i.id) !== id);
         localStorage.setItem("cart", JSON.stringify(updated));
         return updated;
@@ -671,19 +677,16 @@ const App = () => {
         await api.delete("/api/cart/clear");
         setCartItems([]);
 
-        toast.success("Cart cleared", {
-          id: "cart-cleared",
-        });
+        showCustomToast("Cart cleared", "success");
       } catch (error) {
         console.error("Error clearing cart:", error);
+        showCustomToast("Failed to clear cart", "error");
       }
     } else {
       setCartItems([]);
       localStorage.removeItem("cart");
 
-      toast.success("Cart cleared", {
-        id: "cart-cleared",
-      });
+      showCustomToast("Cart cleared", "success");
     }
   };
 
@@ -699,6 +702,7 @@ const App = () => {
 
   /* ═══════════════════════════ WISHLIST HELPERS ═══════════════════════════ */
   const addToWishlist = async (product) => {
+    const productName = product.name || "Item";
     if (user) {
       try {
         const productId = product._id || product.id;
@@ -719,9 +723,9 @@ const App = () => {
 
         if (response.data.success) {
           setWishlist(response.data.wishlist || []);
-          toast.success(`${product.name} added to wishlist`);
+          showCustomToast(`${productName} added to wishlist`, "success");
         } else {
-          toast.error(response.data.message || "Failed to add to wishlist");
+          showCustomToast(response.data.message || "Failed to add to wishlist", "error");
         }
       } catch (error) {
         console.error("Add to wishlist error:", error);
@@ -729,14 +733,14 @@ const App = () => {
           error.response?.data?.message ||
           error.message ||
           "Failed to add to wishlist";
-        toast.error(errorMessage);
+        showCustomToast(errorMessage, "error");
       }
     } else {
       // Guest user logic
       setWishlist((prev) => {
         const productId = product._id || product.id;
         if (prev.some((i) => (i._id || i.id) === productId)) return prev;
-        toast.success(`${product.name} added to wishlist`);
+        showCustomToast(`${productName} added to wishlist`, "success");
         const updated = [
           ...prev,
           {
@@ -758,16 +762,19 @@ const App = () => {
 
         if (response.data.success) {
           setWishlist(response.data.wishlist || []);
-          toast.success("Item removed from wishlist");
+          showCustomToast("Item removed from wishlist", "success");
         }
       } catch (error) {
         console.error("Error removing from wishlist:", error);
+        showCustomToast("Failed to remove item", "error");
       }
     } else {
       // Guest user logic
       setWishlist((prev) => {
         const item = prev.find((i) => (i._id || i.id) === id);
-        if (item) toast.success(`${item.name} removed from wishlist`);
+        if (item) {
+            showCustomToast(`${item.name} removed from wishlist`, "success");
+        }
         const updated = prev.filter((i) => (i._id || i.id) !== id);
         localStorage.setItem("wishlist", JSON.stringify(updated));
         return updated;
@@ -777,23 +784,17 @@ const App = () => {
 
   // Fixed toggleWishlist function for App.js
   const toggleWishlist = async (product) => {
+    // Safety check for product name
+    const productName = product.name || "Item";
+
     const productId = product._id || product.id;
     const isInWishlist = wishlist.some(
       (i) =>
         (i._id || i.id || i.productId)?.toString() === productId?.toString()
     );
 
-    console.log("=== TOGGLE WISHLIST DEBUG ===");
-    console.log("Product ID:", productId);
-    console.log("Product Name:", product.name);
-    console.log("Current wishlist state:", wishlist);
-    console.log("Is in wishlist:", isInWishlist);
-    console.log("User logged in:", !!user);
-
     if (user) {
       try {
-        console.log("Making API call to toggle wishlist...");
-
         const response = await api.post("/api/wishlist/toggle", {
           productId: productId,
           productData: {
@@ -809,22 +810,23 @@ const App = () => {
 
         if (response.data.success) {
           const newWishlist = [...(response.data.wishlist || [])];
-          console.log("Setting new wishlist state:", newWishlist);
-
           setWishlist(newWishlist);
 
-          // Verify state was set
-          setTimeout(() => {
-            console.log("Wishlist state after update:", wishlist);
-          }, 100);
+      
+          if (isInWishlist) {
+         //   showCustomToast(`${productName} removed from wishlist`, "success");
+          } else {
+        //    showCustomToast(`${productName} added to wishlist`, "success");
+          }
         } else {
           console.error("API call unsuccessful:", response.data.message);
+    
+          showCustomToast(response.data.message || "Failed to update wishlist", "error");
         }
       } catch (error) {
-        console.error(
-          "Toggle wishlist API error:",
-          error.response?.data || error
-        );
+        console.error("Toggle wishlist API error:", error);
+       
+        showCustomToast("Failed to update wishlist", "error");
       }
     } else {
       // Guest user logic
@@ -835,12 +837,16 @@ const App = () => {
           const item = prev.find(
             (i) => (i._id || i.id)?.toString() === productId?.toString()
           );
-          if (item) toast.success(`${item.name} removed from wishlist`);
+          
+         
+          if (item) {
+      //      showCustomToast(`${item.name} removed from wishlist`, "success");
+          }
+
           const updated = prev.filter(
             (i) => (i._id || i.id)?.toString() !== productId?.toString()
           );
           localStorage.setItem("wishlist", JSON.stringify(updated));
-          console.log("Guest wishlist updated (removed):", updated);
           return updated;
         });
       } else {
@@ -851,7 +857,9 @@ const App = () => {
             )
           )
             return prev;
-          toast.success(`${product.name} added to wishlist`);
+
+         // showCustomToast(`${productName} added to wishlist`, "success");
+
           const updated = [
             ...prev,
             {
@@ -861,7 +869,6 @@ const App = () => {
             },
           ];
           localStorage.setItem("wishlist", JSON.stringify(updated));
-          console.log("Guest wishlist updated (added):", updated);
           return updated;
         });
       }
@@ -1058,8 +1065,7 @@ const App = () => {
     updateProductStock,
     reserveStock,
 
-    showToast: (msg, type = "success") =>
-      type === "error" ? toast.error(msg) : toast.success(msg),
+    showToast: (msg, type = "success") => showCustomToast(msg, type),
   };
 
   if (loading) {
