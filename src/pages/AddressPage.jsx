@@ -1,5 +1,5 @@
 // pages/AddressPage.jsx
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   ArrowLeft,
   MapPin,
@@ -19,12 +19,23 @@ import api from "../utils/api"; // Make sure you have this utility
 const AddressPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, getCartTotal, getCartItemsCount, fetchUserAddress } =
-    useAppContext();
+  const { user, getCartTotal, getCartItemsCount, fetchUserAddress } = useAppContext();
 
   // Get cart data from navigation state
   const cartFromState = location.state?.cart;
   const productFromState = location.state?.product;
+
+  const orderAmount = useMemo(() => {
+    if (cartFromState?.total) {
+      return cartFromState.total;
+    }
+    if (productFromState) {
+      return productFromState.price * productFromState.quantity;
+    }
+    return 0;
+  }, [cartFromState, productFromState]);
+
+  
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -55,6 +66,74 @@ const AddressPage = () => {
     }
   }, [cartFromState, productFromState, navigate]);
 
+  const calculateDeliveryCharges = useCallback(async (pincode) => {
+    // Validation
+    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+      setDeliveryCharges(0);
+      setDeliveryInfo(null);
+      return null;
+    }
+
+    // Check if orderAmount is ready
+    if (!orderAmount || orderAmount <= 0) {
+      console.log("Order amount not ready yet, skipping delivery calculation");
+      return null;
+    }
+
+    setIsCalculatingDelivery(true);
+    try {
+      console.log(
+        `📦 Calculating delivery for pincode ${pincode} with order amount ₹${orderAmount}`
+      );
+
+      const response = await api.post("/api/delivery/calculate", {
+        pincode,
+        orderAmount,
+      });
+
+      if (response.data.success) {
+        const { deliveryInfo: info } = response.data;
+        
+        console.log("✅ Delivery charges calculated:", {
+          charges: info.charges,
+          isFreeDelivery: info.isFreeDelivery,
+          orderAmount,
+          threshold: info.freeDeliveryThreshold
+        });
+
+        // Update state
+        setDeliveryCharges(info.charges);
+        setDeliveryInfo(info);
+        
+        // ✅ Return data for immediate use
+        return { charges: info.charges, info: info };
+      }
+    } catch (error) {
+      console.error("Error calculating delivery charges:", error);
+      
+      // Fallback logic
+      const defaultCharges = orderAmount >= 1499 ? 0 : 120;
+      const fallbackInfo = {
+        charges: defaultCharges,
+        baseCharges: 120,
+        description:
+          orderAmount >= 1499
+            ? "Free Delivery (Order above ₹1499)"
+            : "Standard delivery charges",
+        isFreeDelivery: orderAmount >= 1499,
+        freeDeliveryThreshold: 1499,
+      };
+      
+      setDeliveryCharges(defaultCharges);
+      setDeliveryInfo(fallbackInfo);
+      
+      // ✅ Return fallback data
+      return { charges: defaultCharges, info: fallbackInfo };
+    } finally {
+      setIsCalculatingDelivery(false);
+    }
+  }, [orderAmount]);
+
   // Load existing address data if available
   useEffect(() => {
     const loadExistingAddress = async () => {
@@ -70,111 +149,78 @@ const AddressPage = () => {
               state: addr.state || "",
               pinCode: addr.zipCode || "",
             }));
+            
+            // Recalculate delivery charges if pincode exists
+            if (addr.zipCode && addr.zipCode.length === 6) {
+              await calculateDeliveryCharges(addr.zipCode);
+            }
           }
         } catch (error) {
           console.error("Error loading existing address:", error);
-          // Don't show error to user as this is optional
         }
       }
     };
 
     loadExistingAddress();
-  }, [user]);
-
-  const calculateDeliveryCharges = async (pincode) => {
-    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
-      setDeliveryCharges(0);
-      setDeliveryInfo(null);
-      return;
-    }
-
-    setIsCalculatingDelivery(true);
-    try {
-      // ✅ Calculate order amount
-      const orderAmount =
-        cartFromState?.total ||
-        (productFromState
-          ? productFromState.price * productFromState.quantity
-          : 0);
-
-      // ✅ Send both pincode AND orderAmount
-      const response = await api.post("/api/delivery/calculate", {
-        pincode,
-        orderAmount, // Add this!
-      });
-
-      if (response.data.success) {
-        setDeliveryCharges(response.data.deliveryInfo.charges);
-        setDeliveryInfo(response.data.deliveryInfo);
-        console.log("Delivery charges calculated:", response.data.deliveryInfo);
-      }
-    } catch (error) {
-      console.error("Error calculating delivery charges:", error);
-      // Set default charges on error
-      setDeliveryCharges(120); // Changed from 150 to 120
-      setDeliveryInfo({
-        charges: 120,
-        description: "Standard delivery charges",
-      });
-    } finally {
-      setIsCalculatingDelivery(false);
-    }
-  };
+  }, [user, calculateDeliveryCharges]);
 
   // Debounced pincode lookup
-  const fetchLocationFromPincode = useCallback(async (pincode) => {
-    if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) return;
+  const fetchLocationFromPincode = useCallback(
+    async (pincode) => {
+      if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) return;
 
-    setIsPinCodeLoading(true);
-    setPinCodeStatus("");
+      setIsPinCodeLoading(true);
+      setPinCodeStatus("");
 
-    try {
-      const response = await fetch(
-        `https://api.postalpincode.in/pincode/${pincode}`
-      );
-      const data = await response.json();
+      try {
+        const response = await fetch(
+          `https://api.postalpincode.in/pincode/${pincode}`
+        );
+        const data = await response.json();
 
-      if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
-        const postOffices = data[0].PostOffice;
-        const primaryLocation = postOffices[0];
+        if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
+          const postOffices = data[0].PostOffice;
+          const primaryLocation = postOffices[0];
 
-        setFormData((prev) => ({
-          ...prev,
-          city: primaryLocation.District || primaryLocation.Block || "",
-          state: primaryLocation.State || primaryLocation.Circle || "",
-        }));
+          setFormData((prev) => ({
+            ...prev,
+            city: primaryLocation.District || primaryLocation.Block || "",
+            state: primaryLocation.State || primaryLocation.Circle || "",
+          }));
 
-        setPinCodeStatus("valid");
+          setPinCodeStatus("valid");
 
-        if (postOffices.length > 1) {
-          setPinCodeSuggestions(
-            postOffices.slice(0, 5).map((po) => ({
-              name: po.Name,
-              district: po.District,
-              state: po.State,
-              block: po.Block,
-            }))
-          );
+          if (postOffices.length > 1) {
+            setPinCodeSuggestions(
+              postOffices.slice(0, 5).map((po) => ({
+                name: po.Name,
+                district: po.District,
+                state: po.State,
+                block: po.Block,
+              }))
+            );
+          } else {
+            setPinCodeSuggestions([]);
+          }
+
+          // Calculate delivery charges after successful pincode validation
+          await calculateDeliveryCharges(pincode);
         } else {
+          setPinCodeStatus("invalid");
+          setFormData((prev) => ({ ...prev, city: "", state: "" }));
           setPinCodeSuggestions([]);
+          setDeliveryCharges(0);
+          setDeliveryInfo(null);
         }
-
-        // Calculate delivery charges after successful pincode validation
-        await calculateDeliveryCharges(pincode);
-      } else {
+      } catch (error) {
+        console.error("Error fetching pincode data:", error);
         setPinCodeStatus("invalid");
-        setFormData((prev) => ({ ...prev, city: "", state: "" }));
-        setPinCodeSuggestions([]);
-        setDeliveryCharges(0);
-        setDeliveryInfo(null);
+      } finally {
+        setIsPinCodeLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching pincode data:", error);
-      setPinCodeStatus("invalid");
-    } finally {
-      setIsPinCodeLoading(false);
-    }
-  }, []);
+    },
+    [calculateDeliveryCharges] // ✅ Depend on the memoized function
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -243,7 +289,27 @@ const AddressPage = () => {
 
     setIsLoading(true);
     try {
-      console.log("Saving address to MongoDB...");
+      // Initialize with current state
+      let finalCharges = deliveryCharges;
+      let finalInfo = deliveryInfo;
+
+      // If delivery info is missing, calculate it NOW and use the returned value
+      if (!finalInfo && formData.pinCode.length === 6) {
+        console.log("⚠️ Delivery charges not calculated, calculating now...");
+        const result = await calculateDeliveryCharges(formData.pinCode);
+        
+        // ✅ Use the returned result immediately (don't wait for state update)
+        if (result) {
+          finalCharges = result.charges;
+          finalInfo = result.info;
+        }
+      }
+
+      console.log("Saving address to MongoDB with delivery info:", {
+        orderAmount,
+        deliveryCharges: finalCharges,
+        isFreeDelivery: finalInfo?.isFreeDelivery
+      });
 
       const addressPayload = {
         name: formData.name,
@@ -255,8 +321,8 @@ const AddressPage = () => {
         pinCode: formData.pinCode,
         city: formData.city,
         state: formData.state,
-        deliveryCharges: deliveryCharges, // Include delivery charges
-        deliveryInfo: deliveryInfo, // Include delivery info
+        deliveryCharges: finalCharges, // Use the definitive value
+        deliveryInfo: finalInfo,        // Use the definitive value
       };
 
       const response = await api.post("/api/address/save", addressPayload);
@@ -268,34 +334,34 @@ const AddressPage = () => {
           fetchUserAddress();
         }
 
+        // Prepare data for next step
+        const addressForNextStep = {
+          ...formData,
+          deliveryCharges: finalCharges,
+          deliveryInfo: finalInfo,
+        };
+
         localStorage.setItem(
           "deliveryAddress",
           JSON.stringify({
-            ...formData,
-            deliveryCharges,
-            deliveryInfo,
+            ...addressForNextStep,
             timestamp: new Date().toISOString(),
           })
         );
 
         // Navigate to checkout with delivery charges
+        const navigationState = {
+          address: addressForNextStep,
+          savedToDb: true,
+        };
+
         if (cartFromState) {
-          navigate("/checkout", {
-            state: {
-              cart: cartFromState,
-              address: { ...formData, deliveryCharges, deliveryInfo },
-              savedToDb: true,
-            },
-          });
+          navigationState.cart = cartFromState;
         } else if (productFromState) {
-          navigate("/checkout", {
-            state: {
-              product: productFromState,
-              address: { ...formData, deliveryCharges, deliveryInfo },
-              savedToDb: true,
-            },
-          });
+          navigationState.product = productFromState;
         }
+
+        navigate("/checkout", { state: navigationState });
       } else {
         throw new Error(response.data.message || "Failed to save address");
       }
@@ -314,45 +380,52 @@ const AddressPage = () => {
 
       // Fallback with delivery charges
       console.log("Falling back to local storage...");
+      
+      // Use the final values (either from state or calculated)
+      let finalCharges = deliveryCharges;
+      let finalInfo = deliveryInfo;
+
       localStorage.setItem(
         "deliveryAddress",
         JSON.stringify({
           ...formData,
-          deliveryCharges,
-          deliveryInfo,
+          deliveryCharges: finalCharges,
+          deliveryInfo: finalInfo,
           timestamp: new Date().toISOString(),
         })
       );
 
+      const navigationState = {
+        address: { ...formData, deliveryCharges: finalCharges, deliveryInfo: finalInfo },
+        savedToDb: false,
+        fallback: true,
+      };
+
       if (cartFromState) {
-        navigate("/checkout", {
-          state: {
-            cart: cartFromState,
-            address: { ...formData, deliveryCharges, deliveryInfo },
-            savedToDb: false,
-            fallback: true,
-          },
-        });
+        navigationState.cart = cartFromState;
       } else if (productFromState) {
-        navigate("/checkout", {
-          state: {
-            product: productFromState,
-            address: { ...formData, deliveryCharges, deliveryInfo },
-            savedToDb: false,
-            fallback: true,
-          },
-        });
+        navigationState.product = productFromState;
       }
+
+      navigate("/checkout", { state: navigationState });
     } finally {
       setIsLoading(false);
     }
   };
 
   // Calculate display values
-  const cartTotal =
-    cartFromState?.total ||
-    (productFromState ? productFromState.price * productFromState.quantity : 0);
+  const cartTotal = orderAmount;
   const cartCount = cartFromState?.itemCount || (productFromState ? 1 : 0);
+
+  useEffect(() => {
+    console.log("📊 Current state:", {
+      orderAmount,
+      deliveryCharges,
+      isFreeDelivery: deliveryInfo?.isFreeDelivery,
+      threshold: deliveryInfo?.freeDeliveryThreshold,
+      pinCode: formData.pinCode,
+    });
+  }, [orderAmount, deliveryCharges, deliveryInfo, formData.pinCode]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50  py-10 px-4">
