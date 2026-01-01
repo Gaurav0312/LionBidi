@@ -11,10 +11,8 @@ import {
   Minus,
   Share,
   MessageCircle,
-  ThumbsUp,
   ChevronLeft,
   ChevronRight,
-  Check,
   Flame,
   Leaf,
   Crown,
@@ -165,7 +163,7 @@ const ProductDetailPage = () => {
   const navigate = useNavigate();
 
   // Get context functions
-  const { addToCart, addToWishlist, wishlist, user, openAuthModal } =
+  const { addToCart, toggleWishlist, wishlist, user, openAuthModal, showToast } =
     useAppContext();
 
   // Component state
@@ -173,7 +171,7 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [showShareModal, setShowShareModal] = useState(false);
-  const [cartMessage, setCartMessage] = useState("");
+  // const [cartMessage, setCartMessage] = useState("");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentProduct, setCurrentProduct] = useState(null);
@@ -220,19 +218,44 @@ const ProductDetailPage = () => {
   }, [slug]);
 
   useEffect(() => {
-  if (currentProduct) {
-    // Add structured data to page
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify(generateProductSchema(currentProduct));
-    document.head.appendChild(script);
-    
-    return () => {
-      // Cleanup
-      document.head.removeChild(script);
-    };
-  }
-}, [currentProduct]);
+    if (currentProduct) {
+      // 1. Check if we saved a quantity for this specific product
+      const savedQty = sessionStorage.getItem(`draft_qty_${currentProduct.slug}`);
+      
+      if (savedQty) {
+        setQuantity(parseInt(savedQty));
+      } else {
+        setQuantity(currentProduct.minQuantity || 1);
+      }
+    }
+  }, [currentProduct]);
+
+  useEffect(() => {
+    if (currentProduct) {
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.text = JSON.stringify(generateProductSchema(currentProduct));
+      document.head.appendChild(script);
+
+      return () => {
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
+        }
+      };
+    }
+  }, [currentProduct]);
+
+  useEffect(() => {
+    if (user && wishlist && currentProduct) {
+      const isItemInWishlist = wishlist.some((item) => {
+        const itemId = (item.productId || item.id || item._id)?.toString();
+        const currentId = (currentProduct.id || currentProduct._id)?.toString();
+        return itemId === currentId;
+      });
+      
+      setIsWishlisted(isItemInWishlist);
+    }
+  }, [wishlist, currentProduct, user]);
 
   // Loading state
   if (loading) {
@@ -281,17 +304,11 @@ const ProductDetailPage = () => {
 
   // Handle quantity changes with minimum quantity validation
   const incrementQuantity = () => {
-    console.log("Current quantity:", quantity);
-    console.log("Stock count:", currentProduct.stockCount);
-    console.log("Stock count type:", typeof currentProduct.stockCount);
 
     const maxStock = parseInt(currentProduct.stockCount) || 10000;
-    console.log("Max stock after parsing:", maxStock);
-    console.log("Can increment?", quantity < maxStock);
 
     if (quantity < maxStock) {
       setQuantity(quantity + 1);
-      console.log("Quantity incremented to:", quantity + 1);
     }
   };
 
@@ -310,14 +327,12 @@ const ProductDetailPage = () => {
 
     const minQty = currentProduct.minQuantity || 1;
     if (quantity < minQty) {
-      setCartMessage(`Minimum order quantity is ${minQty} pieces`);
-      setTimeout(() => setCartMessage(""), 3000);
+      showToast(`Minimum order quantity is ${minQty} pieces`, "error");
       return;
     }
 
     setIsAddingToCart(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Calculate bulk pricing
       const bulkCalc = calculateBulkPrice(
@@ -332,7 +347,7 @@ const ProductDetailPage = () => {
         _id: currentProduct.id,
         id: currentProduct.id,
         price: currentProduct.price,
-        discountPrice: currentProduct.price,
+        discountPrice: bulkCalc.price,
         originalPrice: currentProduct.originalPrice,
         image: currentProduct.images?.[0] || currentProduct.image,
 
@@ -345,17 +360,11 @@ const ProductDetailPage = () => {
 
       await addToCart(productToAdd, quantity, true);
 
-      const message =
-        bulkCalc.savings > 0
-          ? `${quantity} items added to cart! You saved ₹${bulkCalc.savings} with bulk pricing!`
-          : `${quantity} items added to cart successfully!`;
+      sessionStorage.removeItem(`draft_qty_${currentProduct.slug}`);
 
-      setCartMessage(message);
-      setTimeout(() => setCartMessage(""), 4000);
     } catch (error) {
       console.error("Add to cart error:", error);
-      setCartMessage("Failed to add product to cart");
-      setTimeout(() => setCartMessage(""), 3000);
+      showToast("Failed to add product to cart", "error");
     } finally {
       setIsAddingToCart(false);
     }
@@ -368,7 +377,17 @@ const ProductDetailPage = () => {
       return;
     }
 
-    addToWishlist(currentProduct);
+    // Create a clean product object to ensure IDs match what's in the database/context
+    const productToToggle = {
+      ...currentProduct,
+      id: currentProduct.id || currentProduct._id,
+      _id: currentProduct._id || currentProduct.id,
+      price: currentProduct.price, // Use base price for wishlist reference
+    };
+
+    // Use toggleWishlist instead of addToWishlist
+    // This function inside your context handles the "Add if new, Remove if exists" logic
+    toggleWishlist(productToToggle);
   };
 
   // Handle share
@@ -391,19 +410,13 @@ const ProductDetailPage = () => {
   // Copy to clipboard
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    setCartMessage("Link copied to clipboard!");
-    setTimeout(() => setCartMessage(""), 2000);
+    showToast("Link copied to clipboard!", "success");
     setShowShareModal(false);
   };
 
   // Handle back navigation
   const handleBack = () => {
     navigate(-1); // Go back to previous page
-  };
-
-  // Handle similar product click
-  const handleSimilarProductClick = (productSlug) => {
-    navigate(`/product/${productSlug}`);
   };
 
   // Calculate bulk pricing discount
@@ -431,25 +444,14 @@ const ProductDetailPage = () => {
     return { price: basePrice, discount: 0, savings: 0 };
   };
 
-  const getBulkDiscount = (qty) => {
-    const applicable = currentProduct.bulkPricing
-      .filter((bulk) => qty >= bulk.minQty)
-      .sort((a, b) => b.minQty - a.minQty);
-    return applicable.length > 0 ? applicable[0] : null;
-  };
-  const calculateDiscountedPrice = () => {
-    const bulkDiscount = getBulkDiscount(quantity);
-    return bulkDiscount
-      ? currentProduct.price - bulkDiscount.discount
-      : currentProduct.price;
-  };
-
-  // Inside ProductDetailPage component
+  // handleBuyNow Function
   const handleBuyNow = () => {
     if (!user) {
       openAuthModal();
       return;
     }
+
+    sessionStorage.setItem(`draft_qty_${currentProduct.slug}`, quantity);
 
     const bulkCalc = calculateBulkPrice(
       quantity,
@@ -457,7 +459,6 @@ const ProductDetailPage = () => {
       currentProduct.bulkPricing
     );
 
-    // Create a safe product object without React nodes
     const productToBuy = {
       id: currentProduct.id,
       name: currentProduct.name,
@@ -470,7 +471,6 @@ const ProductDetailPage = () => {
 
     console.log("💳 Buy Now - Product data for address page:", productToBuy);
 
-    // 🔥 Navigate to ADDRESS page first (same as cart flow)
     navigate("/address", {
       state: {
         product: productToBuy,
@@ -519,12 +519,10 @@ const ProductDetailPage = () => {
     };
   };
 
-  
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50">
       {/* Cart Message */}
-      {cartMessage && (
+      {/* {cartMessage && (
         <div
           role="status"
           aria-live="polite"
@@ -533,7 +531,7 @@ const ProductDetailPage = () => {
           <Check className="w-5 h-5" />
           <span>{cartMessage}</span>
         </div>
-      )}
+      )} */}
 
       {/* Share Modal */}
       {showShareModal && (
