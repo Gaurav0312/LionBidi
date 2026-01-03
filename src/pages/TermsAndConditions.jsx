@@ -77,7 +77,7 @@ const TermsAndConditions = () => {
               We offer delivery across India where legally permitted. Delivery times may vary
               depending on location and local regulations regarding tobacco products. Lion Bidi 
               is not responsible for delays caused by courier services, weather conditions, or 
-              regulatory restrictions. Free delivery is available on orders above ₹1000.
+              regulatory restrictions. Free delivery is available on orders above ₹1499.
             </p>
           </section>
 
