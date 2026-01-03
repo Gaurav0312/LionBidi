@@ -264,7 +264,7 @@ const HomePage = () => {
                             ₹280
                           </p>
                           <span className="block text-sm text-gray-600">
-                            per pack | Free Shipping on order above ₹999
+                            per pack | Free Shipping on order above ₹1499
                           </span>
                         </div>
                         <div className="flex items-center justify-center gap-2 pt-2">
