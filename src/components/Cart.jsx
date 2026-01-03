@@ -503,7 +503,7 @@ const Cart = ({ isCartOpen, setIsCartOpen, handleNavigate }) => {
                 </div>
                 <div className="flex items-center gap-1">
                   <Truck size={12} />
-                  <span>Free shipping ₹999+</span>
+                  <span>Free shipping ₹1499+</span>
                 </div>
               </div>
 
