@@ -30,7 +30,7 @@ const PromoBar = ({ onClose }) => {
           <span className="bg-white text-[#FF6B35] px-2.5 py-1 rounded-full text-xs font-extrabold shadow-lg">
             FREE SHIPPING
           </span>
-          <span className="font-semibold">on ₹999+</span>
+          <span className="font-semibold">on ₹1499+</span>
           <Sparkles size={16} className="text-yellow-200 animate-pulse" />
         </div>
 
@@ -44,7 +44,7 @@ const PromoBar = ({ onClose }) => {
           <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20 shadow-lg">
             <Zap size={16} className="text-yellow-200" />
             <span className="font-bold text-base tracking-wide">FREE SHIPPING</span>
-            <span className="text-sm font-medium">on orders ₹999+</span>
+            <span className="text-sm font-medium">on orders ₹1499+</span>
           </div>
           
           <div className="flex items-center gap-1">
