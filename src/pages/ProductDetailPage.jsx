@@ -1055,7 +1055,7 @@ const ProductDetailPage = () => {
                       Free Delivery
                     </div>
                     <div className="text-sm text-gray-600">
-                      On orders above ₹1000
+                      On orders above ₹1499
                     </div>
                   </div>
                 </div>
