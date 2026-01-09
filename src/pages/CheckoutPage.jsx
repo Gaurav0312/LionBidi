@@ -500,30 +500,6 @@ const CheckoutPage = () => {
     }
   };
 
-  const constructUpiUrl = (appScheme = "upi://", params) => {
-    const baseUrl = `${appScheme}pay`;
-    const queryString = new URLSearchParams({
-      pa: params.pa, // VPA (UPI ID)
-      pn: params.pn, // Payee Name
-      am: params.am, // Amount
-      cu: "INR",
-      tn: params.tn, // Transaction Note
-    }).toString();
-    return `${baseUrl}?${queryString}`;
-  };
-
-  const upiParams = {
-    pa: "9589773525@ptyes",
-    pn: "Gaurav Verma",
-    am: totalPrice.toFixed(2),
-    tn: `Order #${createdOrder?.orderNumber || "New"}`,
-  };
-
-  const gPayLink = constructUpiUrl("tez://", upiParams);
-  const phonePeLink = constructUpiUrl("phonepe://", upiParams);
-  const paytmLink = constructUpiUrl("paytmmp://", upiParams);
-  const genericUpiLink = constructUpiUrl("upi://", upiParams);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 py-10 px-4">
       <div className="max-w-5xl mx-auto">
@@ -967,196 +943,142 @@ const CheckoutPage = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Calculate Dynamic Links */}
-              {(() => {
-                // Helper to construct UPI Links
-                const constructUpi = (scheme) => {
-                  const params = new URLSearchParams({
-                    pa: upiId,
-                    pn: upiName,
-                    am: totalPrice.toFixed(2),
-                    cu: "INR",
-                    tn: `Order ${createdOrder?.orderNumber || ""}`,
-                  });
-                  return `${scheme}?${params.toString()}`;
-                };
-
-                const gPayLink = constructUpi("tez://pay");
-                const phonePeLink = constructUpi("phonepe://pay");
-                const paytmLink = constructUpi("paytmmp://pay");
-                const genericLink = constructUpi("upi://pay");
-
-                return (
-                  <>
-                    {/* DESKTOP VIEW: Show QR Code */}
-                    {!isMobile ? (
-                      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center shadow-inner">
-                        <div className="inline-block p-4 bg-white rounded-xl shadow-lg border border-indigo-100">
-                          <QRCode value={genericLink} size={180} />
-                        </div>
-                        <h3 className="mt-4 font-semibold text-gray-800">
-                          Scan QR Code to Pay
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Open any UPI app on your phone and scan
-                        </p>
-                      </div>
-                    ) : (
-                      /* MOBILE VIEW: Show Specific App Buttons */
-                      <div className="grid grid-cols-1 gap-3">
-                        <p className="text-sm text-center text-gray-600 mb-2 font-medium">
-                          Select your app to pay ₹{totalPrice.toFixed(2)}:
-                        </p>
-
-                        {/* PhonePe Button */}
-                        <a
-                          href={phonePeLink}
-                          onClick={() => setMobilePaymentAttempted(true)}
-                          className="flex items-center justify-center bg-[#5f259f] text-white font-bold py-3.5 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
-                        >
-                          <span className="text-lg">Pay with PhonePe</span>
-                        </a>
-
-                        {/* Google Pay Button */}
-                        <a
-                          href={gPayLink}
-                          onClick={() => setMobilePaymentAttempted(true)}
-                          className="flex items-center justify-center bg-white border-2 border-gray-200 text-gray-800 font-bold py-3.5 px-4 rounded-xl shadow-sm active:scale-95 transition-transform"
-                        >
-                          <span className="flex items-center">
-                            <span className="text-blue-500 mr-1">G</span>
-                            <span className="text-red-500 mr-1">o</span>
-                            <span className="text-yellow-500 mr-1">o</span>
-                            <span className="text-blue-500 mr-1">g</span>
-                            <span className="text-green-500 mr-1">l</span>
-                            <span className="text-red-500 mr-2">e</span>
-                            Pay
-                          </span>
-                        </a>
-
-                        {/* Paytm Button */}
-                        <a
-                          href={paytmLink}
-                          onClick={() => setMobilePaymentAttempted(true)}
-                          className="flex items-center justify-center bg-[#00baf2] text-white font-bold py-3.5 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
-                        >
-                          <span className="text-lg">Pay with Paytm</span>
-                        </a>
-
-                        {/* Other UPI Apps */}
-                        <a
-                          href={genericLink}
-                          onClick={() => setMobilePaymentAttempted(true)}
-                          className="flex items-center justify-center bg-orange-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
-                        >
-                          <span>Other UPI Apps</span>
-                        </a>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-
-              {/* UPI ID Manual Copy Section (Always Visible as Backup) */}
-              <div>
-                <p className="text-sm text-gray-600 mb-2 mt-4">
-                  Having trouble? Copy UPI ID manually:
+              {/* QR Code */}
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center shadow-inner">
+                <div className="inline-block p-4 bg-white rounded-xl shadow-lg border border-indigo-100">
+                  <QRCode value={upiLink} size={180} />
+                </div>
+                <h3 className="mt-4 font-semibold text-gray-800">
+                  Scan QR Code to Pay
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Works with all UPI apps
                 </p>
-                <div className="flex items-center justify-between bg-gray-100 rounded-lg p-3 border border-gray-200">
-                  <span className="font-mono text-gray-800 select-all font-medium">
-                    {upiId}
-                  </span>
+              </div>
+
+              {/* UPI ID */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2">UPI ID</p>
+                <div className="flex items-center justify-between bg-gray-100 rounded-lg p-3">
+                  <span className="font-mono text-gray-800">{upiId}</span>
                   <button
                     onClick={copyUpiId}
-                    className="text-gray-500 hover:text-green-600 transition p-2 hover:bg-white rounded-lg"
+                    className="text-gray-500 hover:text-green-500 transition"
                   >
                     {copied ? (
-                      <div className="flex items-center text-green-600">
-                        <CheckCircle className="w-5 h-5 mr-1" />
-                        <span className="text-xs font-bold">Copied</span>
-                      </div>
+                      <CheckCircle className="w-4 h-4" />
                     ) : (
-                      <Copy className="w-5 h-5" />
+                      <Copy className="w-4 h-4" />
                     )}
                   </button>
                 </div>
+                {copied && (
+                  <p className="text-green-600 text-xs mt-1">Copied!</p>
+                )}
               </div>
 
-              {/* Mobile: Confirmation Logic */}
+              {/* Pay Button */}
+              <a
+                href={upiLink}
+                onClick={(e) => {
+                  if (isMobile) {
+                    setMobilePaymentAttempted(true);
+                  } else {
+                    handlePaymentMade();
+                  }
+                }}
+                className="block w-full bg-[#FF6B35] hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
+              >
+                Pay ₹{totalPrice.toFixed(2)} Now
+              </a>
+
+              {/* Mobile: Show options after payment attempt */}
               {createdOrder && isMobile && mobilePaymentAttempted && (
-                <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div className="space-y-3">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-bold mb-1">
-                      Step 2: Confirm your payment
+                    <p className="font-medium mb-1">
+                      Did you complete the payment?
                     </p>
-                    <p className="text-xs opacity-90">
-                      After paying in the app, come back here and click "Payment
-                      Completed" to attach your screenshot or transaction ID.
+                    <p className="text-xs">
+                      If successful, click "Payment Completed" to submit your
+                      transaction details.
                     </p>
                   </div>
 
                   <div className="flex gap-3">
                     <button
                       onClick={handlePaymentMade}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                      className="flex-1 bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-4 rounded-xl transition-colors"
                     >
-                      Payment Completed <CheckCircle className="w-5 h-5 ml-2" />
+                      Payment Completed ✓
                     </button>
 
                     <button
                       onClick={() => setMobilePaymentAttempted(false)}
-                      className="px-4 py-3 border border-gray-300 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                      className="px-4 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                      title="Try payment again"
                     >
-                      Retry
+                      Retry Payment
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Desktop: Confirmation Button */}
+              {/* Mobile: Show Pay button if payment not yet attempted */}
+              {createdOrder && isMobile && !mobilePaymentAttempted && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                  <p>
+                    👆 Click "Pay Now" above to complete your payment via UPI
+                  </p>
+                </div>
+              )}
+
+              {/* Desktop: Show form trigger button */}
               {createdOrder && !isMobile && (
                 <button
                   onClick={handlePaymentMade}
-                  className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md"
+                  className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
                 >
                   I Have Made the Payment
                 </button>
               )}
 
-              <div className="flex items-center justify-center text-gray-400 text-xs mt-2">
-                <Shield className="w-3 h-3 mr-1" />
-                100% Secure Payments via UPI
+              <div className="flex items-center justify-center text-gray-500 text-sm">
+                <Shield className="w-4 h-4 mr-1" />
+                Secured by UPI
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Instructions section */}
-      <div className="mt-10 bg-white shadow-md rounded-xl p-6 border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">How to Pay</h3>
-        <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
-          <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
-              1
+        {/* Instructions section */}
+        <div className="mt-10 bg-white shadow-md rounded-xl p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            How to Pay
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
+                1
+              </div>
+              <p>
+                {isMobile
+                  ? "Click 'Pay Now' button to open UPI app"
+                  : "Scan QR code with your UPI app"}
+              </p>
             </div>
-            <p>
-              {isMobile
-                ? "Click 'Pay Now' button to open UPI app"
-                : "Scan QR code with your UPI app"}
-            </p>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
-              2
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
+                2
+              </div>
+              <p>Complete payment with your UPI PIN</p>
             </div>
-            <p>Complete payment with your UPI PIN</p>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
-              3
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-[#FF6B35] rounded-full flex items-center justify-center text-white font-bold text-xs">
+                3
+              </div>
+              <p>Click 'I Have Made the Payment' and enter transaction ID</p>
             </div>
-            <p>Click 'I Have Made the Payment' and enter transaction ID</p>
           </div>
         </div>
       </div>
