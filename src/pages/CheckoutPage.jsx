@@ -13,6 +13,7 @@ import {
   Plus,
   MapPin,
   Edit3,
+  Upload,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { useAppContext } from "../context/AppContext";
@@ -29,22 +30,13 @@ const CheckoutPage = () => {
     openAuthModal,
     removeFromCart,
     updateCartItemQuantity,
-    clearCart,
+    clearCart 
   } = useAppContext();
 
   const product = location.state?.product;
   const staticCart = location.state?.cart || location.state?.staticCart;
 
-  const getAddressData = () => {
-    if (location.state?.address) return location.state.address;
-
-    const stored = localStorage.getItem("deliveryAddress");
-    return stored ? JSON.parse(stored) : null;
-  };
-
-  const addressData = getAddressData();
-  const deliveryCharges = addressData?.deliveryCharges || 0;
-  const deliveryInfo = addressData?.deliveryInfo || null;
+  const addressData = location.state?.address;
   const savedToDb = location.state?.savedToDb;
   const fallback = location.state?.fallback;
   const existingOrder = location.state?.existingOrder;
@@ -62,7 +54,6 @@ const CheckoutPage = () => {
   const [paymentScreenshot, setPaymentScreenshot] = useState(null);
   const [transactionId, setTransactionId] = useState("");
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
-  const [mobilePaymentAttempted, setMobilePaymentAttempted] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [orderCreationError, setOrderCreationError] = useState(null);
 
@@ -146,11 +137,12 @@ const CheckoutPage = () => {
   // Create order when page loads if not already created
   useEffect(() => {
     const createOrder = async () => {
+
       if (existingOrder) {
-        console.log("Using existing order:", existingOrder);
-        setCreatedOrder(existingOrder);
-        return;
-      }
+      console.log("Using existing order:", existingOrder);
+      setCreatedOrder(existingOrder);
+      return;
+    }
       // More robust validation
       if (!user) {
         console.log("User not authenticated, cannot create order");
@@ -186,18 +178,16 @@ const CheckoutPage = () => {
         const orderData = {
           cartData: {
             items: cart.items.map((item) => ({
-              productId: item._id || item.id,
+              id: item._id || item.id,
               name: item.name,
               price: item.price,
               quantity: item.quantity,
               image: item.image,
-              totalPrice: item.price * item.quantity,
             })),
             total: cart.total,
             subtotal: cart.subtotal || cart.total,
             savings: cart.savings || 0,
             itemCount: cart.items.length,
-            deliveryCharges: deliveryCharges,
           },
           shippingAddress: {
             name: addressData.name,
@@ -212,8 +202,6 @@ const CheckoutPage = () => {
             country: "India",
           },
           paymentMethod: "UPI",
-          deliveryCharges: deliveryCharges,
-          deliveryInfo: deliveryInfo,
         };
 
         console.log("Sending order data:", orderData);
@@ -230,13 +218,13 @@ const CheckoutPage = () => {
           );
 
           try {
-            console.log("🛒 Clearing cart after successful order creation");
-            await clearCart();
-            console.log("✅ Cart cleared successfully after order creation");
-          } catch (clearError) {
-            console.error("❌ Error clearing cart:", clearError);
-            // Don't fail the order creation if cart clearing fails
-          }
+          console.log('🛒 Clearing cart after successful order creation');
+          await clearCart();
+          console.log('✅ Cart cleared successfully after order creation');
+        } catch (clearError) {
+          console.error('❌ Error clearing cart:', clearError);
+          // Don't fail the order creation if cart clearing fails
+        }
         } else {
           throw new Error(response.data.message || "Order creation failed");
         }
@@ -270,7 +258,7 @@ const CheckoutPage = () => {
     const timer = setTimeout(createOrder, 500);
 
     return () => clearTimeout(timer);
-  }, [user, cart?.total, addressData?.name, existingOrder]);
+  }, [user, cart?.total, addressData?.name, createdOrder, isCreatingOrder, clearCart, existingOrder]);
 
   // Redirect if no data
   useEffect(() => {
@@ -480,11 +468,10 @@ const CheckoutPage = () => {
     );
   }
 
-  const subtotalPrice = product
+  const totalPrice = product
     ? product.price * product.quantity
     : cart?.total || 0;
-  const totalPrice = subtotalPrice + deliveryCharges;
-  const upiId = "9589773525@ptyes";
+  const upiId = "9589773525@ptsbi";
   const upiName = "Gaurav Verma";
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
     upiName
@@ -793,7 +780,7 @@ const CheckoutPage = () => {
                             </p>
 
                             {/* Quantity Controls - Only for live cart */}
-                            {false && !cart.isFromStatic && !createdOrder && (
+                            {!cart.isFromStatic && !createdOrder && (
                               <div className="flex items-center space-x-2">
                                 <button
                                   onClick={() =>
@@ -855,77 +842,8 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-gray-700">Order Amount:</span>
-                  <span className="font-medium">
-                    ₹{subtotalPrice.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex-1">
-                    <span className="text-gray-700">Delivery:</span>
-                    {deliveryInfo && (
-                      <>
-                        {deliveryInfo.isFreeDelivery ? (
-                          <div className="mt-1">
-                            <p className="text-xs text-green-600 font-semibold">
-                              FREE Delivery Applied!
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Orders above ₹{deliveryInfo.freeDeliveryThreshold}{" "}
-                              qualify
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {deliveryInfo.description}
-                              {deliveryInfo.state &&
-                                ` to ${deliveryInfo.state}`}
-                            </p>
-                            {deliveryInfo.freeDeliveryThreshold &&
-                              subtotalPrice <
-                                deliveryInfo.freeDeliveryThreshold && (
-                                <p className="text-xs text-orange-600 mt-1">
-                                  💡 Add ₹
-                                  {(
-                                    deliveryInfo.freeDeliveryThreshold -
-                                    subtotalPrice
-                                  ).toFixed(2)}{" "}
-                                  more for FREE delivery!
-                                </p>
-                              )}
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <span
-                    className={`font-medium ml-3 ${
-                      deliveryInfo?.isFreeDelivery
-                        ? "text-green-600"
-                        : "text-orange-600"
-                    }`}
-                  >
-                    {deliveryInfo?.isFreeDelivery ? (
-                      <span className="flex flex-col items-end">
-                        <span className="text-xs text-gray-400 line-through">
-                          ₹{deliveryInfo.baseCharges}
-                        </span>
-                        <span className="font-bold">FREE</span>
-                      </span>
-                    ) : (
-                      `₹${deliveryCharges.toFixed(2)}`
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200 pt-4 mt-3 flex justify-between items-center">
-                <span className="text-gray-700 font-semibold">
-                  Total Amount
-                </span>
+              <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
+                <span className="text-gray-700 font-semibold">Total</span>
                 <span className="text-2xl font-bold text-divine-orange">
                   ₹{totalPrice.toFixed(2)}
                 </span>
@@ -980,61 +898,14 @@ const CheckoutPage = () => {
               {/* Pay Button */}
               <a
                 href={upiLink}
-                onClick={(e) => {
-                  if (isMobile) {
-                    setMobilePaymentAttempted(true);
-                  } else {
-                    handlePaymentMade();
-                  }
-                }}
-                className="block w-full bg-[#FF6B35] hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
+                onClick={handlePaymentMade}
+                className="block w-full bg-green-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
               >
                 Pay ₹{totalPrice.toFixed(2)} Now
               </a>
 
-              {/* Mobile: Show options after payment attempt */}
-              {createdOrder && isMobile && mobilePaymentAttempted && (
-                <div className="space-y-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-1">
-                      Did you complete the payment?
-                    </p>
-                    <p className="text-xs">
-                      If successful, click "Payment Completed" to submit your
-                      transaction details.
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handlePaymentMade}
-                      className="flex-1 bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-4 rounded-xl transition-colors"
-                    >
-                      Payment Completed ✓
-                    </button>
-
-                    <button
-                      onClick={() => setMobilePaymentAttempted(false)}
-                      className="px-4 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
-                      title="Try payment again"
-                    >
-                      Retry Payment
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Mobile: Show Pay button if payment not yet attempted */}
-              {createdOrder && isMobile && !mobilePaymentAttempted && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                  <p>
-                    👆 Click "Pay Now" above to complete your payment via UPI
-                  </p>
-                </div>
-              )}
-
-              {/* Desktop: Show form trigger button */}
-              {createdOrder && !isMobile && (
+              {/* Payment Made Button */}
+              {createdOrder && (
                 <button
                   onClick={handlePaymentMade}
                   className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
