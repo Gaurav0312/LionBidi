@@ -37,7 +37,7 @@ const CheckoutPage = () => {
 
   const getAddressData = () => {
     if (location.state?.address) return location.state.address;
-    
+
     const stored = localStorage.getItem("deliveryAddress");
     return stored ? JSON.parse(stored) : null;
   };
@@ -65,6 +65,7 @@ const CheckoutPage = () => {
   const [mobilePaymentAttempted, setMobilePaymentAttempted] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [orderCreationError, setOrderCreationError] = useState(null);
+  const [paymentTab, setPaymentTab] = useState("upi");
 
   // Calculate cart data
   const calculateCartData = () => {
@@ -191,7 +192,7 @@ const CheckoutPage = () => {
               price: item.price,
               quantity: item.quantity,
               image: item.image,
-              totalPrice: item.price * item.quantity
+              totalPrice: item.price * item.quantity,
             })),
             total: cart.total,
             subtotal: cart.subtotal || cart.total,
@@ -935,117 +936,233 @@ const CheckoutPage = () => {
 
           {/* Payment Section */}
           <div className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
-            <div className="flex items-center mb-6">
-              <Shield className="w-6 h-6 text-indigo-500 mr-2" />
-              <h2 className="text-xl font-semibold text-gray-800">
-                Payment Options
-              </h2>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <Shield className="w-6 h-6 text-indigo-500 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Payment Options
+                </h2>
+              </div>
+            </div>
+
+            {/* Payment Method Tabs */}
+            <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
+              <button
+                onClick={() => setPaymentTab("upi")}
+                className={`flex-1 flex items-center justify-center py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                  paymentTab === "upi"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                UPI (GPay/PhonePe)
+              </button>
+              <button
+                onClick={() => setPaymentTab("bank")}
+                className={`flex-1 flex items-center justify-center py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                  paymentTab === "bank"
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Bank Transfer
+              </button>
             </div>
 
             <div className="space-y-6">
-              {/* QR Code */}
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center shadow-inner">
-                <div className="inline-block p-4 bg-white rounded-xl shadow-lg border border-indigo-100">
-                  <QRCode value={upiLink} size={180} />
-                </div>
-                <h3 className="mt-4 font-semibold text-gray-800">
-                  Scan QR Code to Pay
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Works with all UPI apps
-                </p>
-              </div>
+              {/* TAB 1: UPI PAYMENT */}
+              {paymentTab === "upi" && (
+                <>
+                  {(() => {
+                    const constructUpi = (scheme) => {
+                      const params = new URLSearchParams({
+                        pa: upiId,
+                        pn: upiName,
+                        am: totalPrice.toFixed(2),
+                        cu: "INR",
+                        tn: `Order ${createdOrder?.orderNumber || ""}`,
+                      });
+                      return `${scheme}?${params.toString()}`;
+                    };
 
-              {/* UPI ID */}
-              <div>
-                <p className="text-sm text-gray-600 mb-2">UPI ID</p>
-                <div className="flex items-center justify-between bg-gray-100 rounded-lg p-3">
-                  <span className="font-mono text-gray-800">{upiId}</span>
-                  <button
-                    onClick={copyUpiId}
-                    className="text-gray-500 hover:text-green-500 transition"
-                  >
-                    {copied ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {copied && (
-                  <p className="text-green-600 text-xs mt-1">Copied!</p>
-                )}
-              </div>
+                    const gPayLink = constructUpi("tez://pay");
+                    const phonePeLink = constructUpi("phonepe://pay");
+                    const paytmLink = constructUpi("paytmmp://pay");
+                    const genericLink = constructUpi("upi://pay");
 
-              {/* Pay Button */}
-              <a
-                href={upiLink}
-                onClick={(e) => {
-                  if (isMobile) {
-                    setMobilePaymentAttempted(true);
-                  } else {
-                    handlePaymentMade();
-                  }
-                }}
-                className="block w-full bg-[#FF6B35] hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition transform hover:scale-[1.02] shadow-md text-center"
-              >
-                Pay ₹{totalPrice.toFixed(2)} Now
-              </a>
+                    return (
+                      <>
+                        {!isMobile ? (
+                          /* Desktop QR */
+                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center border border-indigo-50">
+                            <div className="inline-block p-3 bg-white rounded-xl shadow-md border border-indigo-100">
+                              <QRCode value={genericLink} size={160} />
+                            </div>
+                            <p className="text-sm text-gray-500 mt-3 font-medium">
+                              Scan with any UPI App
+                            </p>
+                          </div>
+                        ) : (
+                          /* Mobile Buttons */
+                          <div className="grid grid-cols-1 gap-3">
+                            <a
+                              href={phonePeLink}
+                              onClick={() => setMobilePaymentAttempted(true)}
+                              className="flex items-center justify-center bg-[#5f259f] text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
+                            >
+                              Pay with PhonePe
+                            </a>
+                            <a
+                              href={gPayLink}
+                              onClick={() => setMobilePaymentAttempted(true)}
+                              className="flex items-center justify-center bg-white border border-gray-300 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm active:scale-95 transition-transform"
+                            >
+                              Pay with Google Pay
+                            </a>
+                            <a
+                              href={paytmLink}
+                              onClick={() => setMobilePaymentAttempted(true)}
+                              className="flex items-center justify-center bg-[#00baf2] text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
+                            >
+                              Pay with Paytm
+                            </a>
+                            <a
+                              href={genericLink}
+                              onClick={() => setMobilePaymentAttempted(true)}
+                              className="flex items-center justify-center bg-orange-600 text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
+                            >
+                              Other UPI Apps
+                            </a>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
-              {/* Mobile: Show options after payment attempt */}
-              {createdOrder && isMobile && mobilePaymentAttempted && (
-                <div className="space-y-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-1">
-                      Did you complete the payment?
+                  {/* UPI ID Copy */}
+                  <div className="mt-2 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-semibold">
+                      Or Pay to UPI ID
                     </p>
-                    <p className="text-xs">
-                      If successful, click "Payment Completed" to submit your
-                      transaction details.
+                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <span className="font-mono text-gray-800 font-medium text-sm">
+                        {upiId}
+                      </span>
+                      <button
+                        onClick={copyUpiId}
+                        className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold px-2"
+                      >
+                        {copied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* TAB 2: BANK TRANSFER */}
+              {paymentTab === "bank" && (
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1">
+                      Bank Details
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      Use IMPS, NEFT, or RTGS to transfer the amount.
                     </p>
                   </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handlePaymentMade}
-                      className="flex-1 bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-4 rounded-xl transition-colors"
-                    >
-                      Payment Completed ✓
-                    </button>
+                  <div className="space-y-4">
+                    {/* Bank Name */}
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                      <span className="text-sm text-gray-500">Bank Name</span>
+                      <span className="text-sm font-bold text-gray-900 text-right">
+                        HDFC Bank {/* REPLACE THIS */}
+                      </span>
+                    </div>
 
-                    <button
-                      onClick={() => setMobilePaymentAttempted(false)}
-                      className="px-4 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
-                      title="Try payment again"
-                    >
-                      Retry Payment
-                    </button>
+                    {/* Account Name */}
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                      <span className="text-sm text-gray-500">
+                        Account Name
+                      </span>
+                      <span className="text-sm font-bold text-gray-900 text-right">
+                        Lion Bidi Works {/* REPLACE THIS */}
+                      </span>
+                    </div>
+
+                    {/* Account Number */}
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                      <span className="text-sm text-gray-500">Account No.</span>
+                      <div className="flex items-center">
+                        <span className="text-sm font-mono font-bold text-gray-900 mr-2">
+                          50200012345678 {/* REPLACE THIS */}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText("50200012345678");
+                            alert("Account Number Copied!");
+                          }}
+                          className="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* IFSC Code */}
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                      <span className="text-sm text-gray-500">IFSC Code</span>
+                      <div className="flex items-center">
+                        <span className="text-sm font-mono font-bold text-gray-900 mr-2">
+                          HDFC0001234 {/* REPLACE THIS */}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText("HDFC0001234");
+                            alert("IFSC Copied!");
+                          }}
+                          className="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-yellow-50 border border-yellow-100 rounded-lg p-3">
+                    <p className="text-xs text-yellow-800 leading-relaxed">
+                      <strong>Note:</strong> Orders paid via Bank Transfer are
+                      processed only after the amount is credited to our
+                      account. Please share the Reference Number below after
+                      transfer.
+                    </p>
                   </div>
                 </div>
               )}
 
-              {/* Mobile: Show Pay button if payment not yet attempted */}
-              {createdOrder && isMobile && !mobilePaymentAttempted && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                  <p>
-                    👆 Click "Pay Now" above to complete your payment via UPI
+              {/* CONFIRMATION SECTION (Common for both) */}
+              <div className="pt-6 border-t border-gray-100">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-900 font-medium mb-1">
+                    Payment Completed?
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    Click the button below to verify your transaction.
                   </p>
                 </div>
-              )}
 
-              {/* Desktop: Show form trigger button */}
-              {createdOrder && !isMobile && (
                 <button
                   onClick={handlePaymentMade}
-                  className="w-full bg-divine-orange hover:scale-[1.02] text-white font-bold py-3 px-6 rounded-xl transition-colors"
+                  className="w-full bg-divine-orange hover:bg-orange-700 text-white font-bold py-3.5 px-6 rounded-xl transition-colors shadow-md flex items-center justify-center"
                 >
-                  I Have Made the Payment
+                  <span className="mr-2">I Have Made the Payment</span>
+                  <CheckCircle className="w-5 h-5" />
                 </button>
-              )}
+              </div>
 
-              <div className="flex items-center justify-center text-gray-500 text-sm">
-                <Shield className="w-4 h-4 mr-1" />
-                Secured by UPI
+              <div className="flex items-center justify-center text-gray-400 text-xs mt-2">
+                <Shield className="w-3 h-3 mr-1" />
+                100% Secure Payments
               </div>
             </div>
           </div>
