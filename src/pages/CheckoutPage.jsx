@@ -1076,7 +1076,7 @@ const CheckoutPage = () => {
                     <div className="flex justify-between items-center pb-2 border-b border-gray-200">
                       <span className="text-sm text-gray-500">Bank Name</span>
                       <span className="text-sm font-bold text-gray-900 text-right">
-                        HDFC Bank {/* REPLACE THIS */}
+                        SBI Bank {/* REPLACE THIS */}
                       </span>
                     </div>
 
@@ -1086,7 +1086,7 @@ const CheckoutPage = () => {
                         Account Name
                       </span>
                       <span className="text-sm font-bold text-gray-900 text-right">
-                        Lion Bidi Works {/* REPLACE THIS */}
+                        Gaurav Verma {/* REPLACE THIS */}
                       </span>
                     </div>
 
@@ -1095,11 +1095,11 @@ const CheckoutPage = () => {
                       <span className="text-sm text-gray-500">Account No.</span>
                       <div className="flex items-center">
                         <span className="text-sm font-mono font-bold text-gray-900 mr-2">
-                          50200012345678 {/* REPLACE THIS */}
+                          43075322727 {/* REPLACE THIS */}
                         </span>
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText("50200012345678");
+                            navigator.clipboard.writeText("43075322727");
                             alert("Account Number Copied!");
                           }}
                           className="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
@@ -1114,11 +1114,11 @@ const CheckoutPage = () => {
                       <span className="text-sm text-gray-500">IFSC Code</span>
                       <div className="flex items-center">
                         <span className="text-sm font-mono font-bold text-gray-900 mr-2">
-                          HDFC0001234 {/* REPLACE THIS */}
+                          SBIN0000347 {/* REPLACE THIS */}
                         </span>
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText("HDFC0001234");
+                            navigator.clipboard.writeText("SBIN0000347");
                             alert("IFSC Copied!");
                           }}
                           className="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
