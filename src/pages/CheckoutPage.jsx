@@ -485,8 +485,8 @@ const CheckoutPage = () => {
     ? product.price * product.quantity
     : cart?.total || 0;
   const totalPrice = subtotalPrice + deliveryCharges;
-  const upiId = "9584153452@ybl";
-  const upiName = "Preeti Verma";
+  const upiId = "9589773525@ptsbi";
+  const upiName = "Gaurav Verma";
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
     upiName
   )}&am=${totalPrice}&cu=INR&tn=Order%20Payment`;
