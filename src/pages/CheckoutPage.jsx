@@ -485,8 +485,8 @@ const CheckoutPage = () => {
     ? product.price * product.quantity
     : cart?.total || 0;
   const totalPrice = subtotalPrice + deliveryCharges;
-  const upiId = "9589773525@ptsbi";
-  const upiName = "Gaurav Verma";
+  const upiId = "9584153452@ybl";
+  const upiName = "Preeti Verma";
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
     upiName
   )}&am=${totalPrice}&cu=INR&tn=Order%20Payment`;
@@ -504,7 +504,7 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-25 to-yellow-50 py-10 px-4">
       <div className="max-w-5xl mx-auto">
-        {/* Payment Confirmation Modal*/}
+        {/* Payment Confirmation Modal */}
         {showPaymentConfirmation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
