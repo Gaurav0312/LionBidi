@@ -40,7 +40,7 @@ const AdminProtectedRoute = ({ children }) => {
     };
 
     verifyAdmin();
-  }, []);
+  }, [API_BASE_URL]);
 
   if (loading) {
     return (
