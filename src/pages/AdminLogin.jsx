@@ -17,12 +17,12 @@ const AdminLogin = () => {
 
   // Check if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (token) {
-      // Verify token validity
-      verifyToken(token);
-    }
-  }, []);
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    // Just redirect - don't verify on every page load
+    navigate('/admin/dashboard');
+  }
+}, [navigate]);
 
   const verifyToken = async (token) => {
     try {
