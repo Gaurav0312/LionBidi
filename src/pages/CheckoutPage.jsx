@@ -6,6 +6,9 @@ import {
   Shield,
   CheckCircle,
   Copy,
+  Check,
+  Clock,
+  Info,
   AlertCircle,
   Trash2,
   X,
@@ -66,6 +69,11 @@ const CheckoutPage = () => {
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [orderCreationError, setOrderCreationError] = useState(null);
   const [paymentTab, setPaymentTab] = useState("upi");
+  const [accountCopied, setAccountCopied] = useState(false);
+  const [ifscCopied, setIfscCopied] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes
+  const [showPaymentTimer, setShowPaymentTimer] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState("pending");
 
   // Calculate cart data
   const calculateCartData = () => {
@@ -227,7 +235,7 @@ const CheckoutPage = () => {
           setCreatedOrder(response.data.order);
           console.log(
             "Order created successfully:",
-            response.data.order.orderNumber
+            response.data.order.orderNumber,
           );
 
           try {
@@ -278,7 +286,7 @@ const CheckoutPage = () => {
     const timer = setTimeout(() => {
       if (!product && !cart) {
         console.log(
-          "No checkout data available after timeout, redirecting to home"
+          "No checkout data available after timeout, redirecting to home",
         );
         navigate("/");
       }
@@ -309,8 +317,30 @@ const CheckoutPage = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (showPaymentTimer && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [showPaymentTimer, timeRemaining]);
+
+  // Auto-detect when user returns from payment app
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && mobilePaymentAttempted) {
+        setShowPaymentTimer(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [mobilePaymentAttempted]);
+
   // Payment confirmation handlers
   const handlePaymentMade = () => {
+    setPaymentStatus("pending");
     setShowPaymentConfirmation(true);
   };
 
@@ -348,12 +378,12 @@ const CheckoutPage = () => {
     ];
 
     const isValidFormat = upiTransactionPatterns.some((pattern) =>
-      pattern.test(cleanTransactionId)
+      pattern.test(cleanTransactionId),
     );
 
     if (!isValidFormat) {
       alert(
-        "Invalid UPI transaction ID format. Please enter a valid 12-digit UPI transaction ID."
+        "Invalid UPI transaction ID format. Please enter a valid 12-digit UPI transaction ID.",
       );
       return;
     }
@@ -366,7 +396,7 @@ const CheckoutPage = () => {
           transactionId: cleanTransactionId,
           screenshot: paymentScreenshot,
           upiId: upiId,
-        }
+        },
       );
 
       if (response.data.success) {
@@ -384,7 +414,7 @@ const CheckoutPage = () => {
       if (error.response?.status === 400) {
         alert(
           error.response.data.message ||
-            "Invalid payment details. Please check and try again."
+            "Invalid payment details. Please check and try again.",
         );
       } else if (error.response?.status === 403) {
         alert("Access denied. This order doesn't belong to you.");
@@ -485,10 +515,10 @@ const CheckoutPage = () => {
     ? product.price * product.quantity
     : cart?.total || 0;
   const totalPrice = subtotalPrice + deliveryCharges;
-  const upiId = "9584153452@ybl";
-  const upiName = "Preeti Verma";
+  const upiId = "9589773525@ptyes";
+  const upiName = "Gaurav Verma";
   const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
-    upiName
+    upiName,
   )}&am=${totalPrice}&cu=INR&tn=Order%20Payment`;
 
   const copyUpiId = async () => {
@@ -498,6 +528,25 @@ const CheckoutPage = () => {
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy UPI ID");
+    }
+  };
+
+  // Enhanced copy function with fallback
+  const copyToClipboard = async (text, setCopiedState) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedState(true);
+      setTimeout(() => setCopiedState(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedState(true);
+      setTimeout(() => setCopiedState(false), 2000);
     }
   };
 
@@ -640,8 +689,8 @@ const CheckoutPage = () => {
                 savedToDb
                   ? "bg-white border-gray-200"
                   : fallback
-                  ? "bg-yellow-50 border-yellow-200"
-                  : "bg-blue-50 border-blue-200"
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-blue-50 border-blue-200"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -651,8 +700,8 @@ const CheckoutPage = () => {
                       savedToDb
                         ? "text-orange-600"
                         : fallback
-                        ? "text-yellow-600"
-                        : "text-orange-600"
+                          ? "text-yellow-600"
+                          : "text-orange-600"
                     }`}
                   />
                   <div>
@@ -661,24 +710,24 @@ const CheckoutPage = () => {
                         savedToDb
                           ? "text-orange-600"
                           : fallback
-                          ? "text-yellow-800"
-                          : "text-orange-800"
+                            ? "text-yellow-800"
+                            : "text-orange-800"
                       }`}
                     >
                       Delivery Address{" "}
                       {savedToDb
                         ? "Saved"
                         : fallback
-                        ? "Set (Local)"
-                        : "Confirmed"}
+                          ? "Set (Local)"
+                          : "Confirmed"}
                     </h3>
                     <p
                       className={`text-sm ${
                         savedToDb
                           ? "text-divine-orange"
                           : fallback
-                          ? "text-yellow-600"
-                          : "text-orange-600"
+                            ? "text-yellow-600"
+                            : "text-orange-600"
                       }`}
                     >
                       {addressData.name} • {addressData.address},{" "}
@@ -699,8 +748,8 @@ const CheckoutPage = () => {
                     savedToDb
                       ? "text-orange-600 hover:text-orange-600"
                       : fallback
-                      ? "text-yellow-600 hover:text-yellow-600"
-                      : "text-orange-600 hover:text-yellow-600"
+                        ? "text-yellow-600 hover:text-yellow-600"
+                        : "text-orange-600 hover:text-yellow-600"
                   }`}
                   title="Edit address"
                 >
@@ -800,7 +849,7 @@ const CheckoutPage = () => {
                                   onClick={() =>
                                     handleQuantityChange(
                                       item.id || item._id,
-                                      item.quantity - 1
+                                      item.quantity - 1,
                                     )
                                   }
                                   className="p-1.5 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
@@ -814,7 +863,7 @@ const CheckoutPage = () => {
                                   onClick={() =>
                                     handleQuantityChange(
                                       item.id || item._id,
-                                      item.quantity + 1
+                                      item.quantity + 1,
                                     )
                                   }
                                   className="p-1.5 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
@@ -936,6 +985,7 @@ const CheckoutPage = () => {
 
           {/* Payment Section */}
           <div className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
+            {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <Shield className="w-6 h-6 text-indigo-500 mr-2" />
@@ -943,7 +993,29 @@ const CheckoutPage = () => {
                   Payment Options
                 </h2>
               </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <Clock className="w-4 h-4 mr-1" />
+                <span className="font-medium">₹{totalPrice.toFixed(2)}</span>
+              </div>
             </div>
+
+            {/* Payment Timer Alert (if payment attempted) */}
+            {showPaymentTimer && paymentStatus === "pending" && (
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">
+                      Returned from payment app?
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      If payment successful, click "I Have Made the Payment"
+                      below to verify.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Payment Method Tabs */}
             <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
@@ -955,7 +1027,12 @@ const CheckoutPage = () => {
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                UPI (GPay/PhonePe)
+                <span>UPI</span>
+                {isMobile && (
+                  <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    Fast
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setPaymentTab("bank")}
@@ -973,6 +1050,18 @@ const CheckoutPage = () => {
               {/* TAB 1: UPI PAYMENT */}
               {paymentTab === "upi" && (
                 <>
+                  {/* Amount Highlight */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">
+                        Amount to Pay
+                      </span>
+                      <span className="text-2xl font-bold text-indigo-600">
+                        ₹{totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
                   {(() => {
                     const constructUpi = (scheme) => {
                       const params = new URLSearchParams({
@@ -994,66 +1083,149 @@ const CheckoutPage = () => {
                       <>
                         {!isMobile ? (
                           /* Desktop QR */
-                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center border border-indigo-50">
-                            <div className="inline-block p-3 bg-white rounded-xl shadow-md border border-indigo-100">
-                              <QRCode value={genericLink} size={160} />
-                            </div>
-                            <p className="text-sm text-gray-500 mt-3 font-medium">
-                              Scan with any UPI App
+                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 text-center border border-indigo-100">
+                            <p className="text-sm font-semibold text-gray-700 mb-4">
+                              Scan QR Code to Pay
                             </p>
+                            <div className="inline-block p-4 bg-white rounded-xl shadow-md border border-indigo-100">
+                              <QRCode value={genericLink} size={180} />
+                            </div>
+                            <div className="mt-4 flex items-center justify-center space-x-2">
+                              <div className="flex -space-x-2">
+                                <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                                  GP
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                                  PP
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                                  PM
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500 font-medium">
+                                Works with all UPI apps
+                              </p>
+                            </div>
                           </div>
                         ) : (
                           /* Mobile Buttons */
-                          <div className="grid grid-cols-1 gap-3">
-                            <a
-                              href={phonePeLink}
-                              onClick={() => setMobilePaymentAttempted(true)}
-                              className="flex items-center justify-center bg-[#5f259f] text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
-                            >
-                              Pay with PhonePe
-                            </a>
-                            <a
-                              href={gPayLink}
-                              onClick={() => setMobilePaymentAttempted(true)}
-                              className="flex items-center justify-center bg-white border border-gray-300 text-gray-800 font-bold py-3 px-4 rounded-xl shadow-sm active:scale-95 transition-transform"
-                            >
-                              Pay with Google Pay
-                            </a>
-                            <a
-                              href={paytmLink}
-                              onClick={() => setMobilePaymentAttempted(true)}
-                              className="flex items-center justify-center bg-[#00baf2] text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
-                            >
-                              Pay with Paytm
-                            </a>
-                            <a
-                              href={genericLink}
-                              onClick={() => setMobilePaymentAttempted(true)}
-                              className="flex items-center justify-center bg-orange-600 text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition-transform"
-                            >
-                              Other UPI Apps
-                            </a>
-                          </div>
+                          <>
+                            <p className="text-sm font-semibold text-gray-700 mb-3">
+                              Choose your preferred UPI app:
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <a
+                                href={phonePeLink}
+                                onClick={() => {
+                                  setMobilePaymentAttempted(true);
+                                  setShowPaymentTimer(true);
+                                }}
+                                className="flex flex-col items-center justify-center bg-[#5f259f] text-white font-bold py-4 px-4 rounded-xl shadow-md active:scale-95 transition-transform hover:shadow-lg"
+                              >
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-2">
+                                  <span className="text-[#5f259f] font-bold text-sm">
+                                    Pe
+                                  </span>
+                                </div>
+                                <span className="text-sm">PhonePe</span>
+                              </a>
+                              <a
+                                href={gPayLink}
+                                onClick={() => {
+                                  setMobilePaymentAttempted(true);
+                                  setShowPaymentTimer(true);
+                                }}
+                                className="flex flex-col items-center justify-center bg-white border-2 border-gray-300 text-gray-800 font-bold py-4 px-4 rounded-xl shadow-sm active:scale-95 transition-transform hover:shadow-md"
+                              >
+                                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center mb-2">
+                                  <span className="text-white font-bold text-sm">
+                                    G
+                                  </span>
+                                </div>
+                                <span className="text-sm">Google Pay</span>
+                              </a>
+                              <a
+                                href={paytmLink}
+                                onClick={() => {
+                                  setMobilePaymentAttempted(true);
+                                  setShowPaymentTimer(true);
+                                }}
+                                className="flex flex-col items-center justify-center bg-[#00baf2] text-white font-bold py-4 px-4 rounded-xl shadow-md active:scale-95 transition-transform hover:shadow-lg"
+                              >
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-2">
+                                  <span className="text-[#00baf2] font-bold text-sm">
+                                    Pt
+                                  </span>
+                                </div>
+                                <span className="text-sm">Paytm</span>
+                              </a>
+                              <a
+                                href={genericLink}
+                                onClick={() => {
+                                  setMobilePaymentAttempted(true);
+                                  setShowPaymentTimer(true);
+                                }}
+                                className="flex flex-col items-center justify-center bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 px-4 rounded-xl shadow-md active:scale-95 transition-transform hover:shadow-lg"
+                              >
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-2">
+                                  <span className="text-orange-600 font-bold text-sm">
+                                    UPI
+                                  </span>
+                                </div>
+                                <span className="text-sm">Other Apps</span>
+                              </a>
+                            </div>
+                          </>
                         )}
                       </>
                     );
                   })()}
 
-                  {/* UPI ID Copy */}
-                  <div className="mt-2 pt-4 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-semibold">
-                      Or Pay to UPI ID
-                    </p>
-                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  {/* UPI ID Copy Section */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                        Or Pay Manually
+                      </p>
+                      <span className="text-xs text-gray-400">Copy UPI ID</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-indigo-300 transition-colors">
                       <span className="font-mono text-gray-800 font-medium text-sm">
                         {upiId}
                       </span>
                       <button
                         onClick={copyUpiId}
-                        className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold px-2"
+                        className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-semibold px-3 py-1 rounded-md hover:bg-indigo-50 transition-colors"
                       >
-                        {copied ? "Copied" : "Copy"}
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4 mr-1" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 mr-1" />
+                            Copy
+                          </>
+                        )}
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start">
+                      <AlertCircle className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-amber-800 space-y-1">
+                        <p className="font-semibold">Payment Instructions:</p>
+                        <ul className="list-disc list-inside space-y-0.5 ml-2">
+                          <li>Verify amount: ₹{totalPrice.toFixed(2)}</li>
+                          <li>Complete payment in your UPI app</li>
+                          <li>
+                            Return here and click "I Have Made the Payment"
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -1061,108 +1233,179 @@ const CheckoutPage = () => {
 
               {/* TAB 2: BANK TRANSFER */}
               {paymentTab === "bank" && (
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                  <div className="mb-4">
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1">
-                      Bank Details
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      Use IMPS, NEFT, or RTGS to transfer the amount.
-                    </p>
+                <>
+                  {/* Amount Highlight */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">
+                        Amount to Transfer
+                      </span>
+                      <span className="text-2xl font-bold text-indigo-600">
+                        ₹{totalPrice.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* Bank Name */}
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-500">Bank Name</span>
-                      <span className="text-sm font-bold text-gray-900 text-right">
-                        SBI Bank {/* REPLACE THIS */}
-                      </span>
+                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1">
+                        Bank Account Details
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        Transfer via IMPS, NEFT, or RTGS
+                      </p>
                     </div>
 
-                    {/* Account Name */}
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-500">
-                        Account Name
-                      </span>
-                      <span className="text-sm font-bold text-gray-900 text-right">
-                        Gaurav Verma {/* REPLACE THIS */}
-                      </span>
-                    </div>
+                    <div className="space-y-3">
+                      {/* Bank Name */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Bank Name
+                          </span>
+                          <span className="text-sm font-bold text-gray-900">
+                            State Bank of India
+                          </span>
+                        </div>
+                      </div>
 
-                    {/* Account Number */}
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-500">Account No.</span>
-                      <div className="flex items-center">
-                        <span className="text-sm font-mono font-bold text-gray-900 mr-2">
-                          43075322727 {/* REPLACE THIS */}
-                        </span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText("43075322727");
-                            alert("Account Number Copied!");
-                          }}
-                          className="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
-                        >
-                          Copy
-                        </button>
+                      {/* Account Name */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Account Name
+                          </span>
+                          <span className="text-sm font-bold text-gray-900">
+                            Gaurav Verma
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Account Number with Copy */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            Account Number
+                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-mono font-bold text-gray-900">
+                              43075322727
+                            </span>
+                            <button
+                              onClick={() =>
+                                copyToClipboard("43075322727", setAccountCopied)
+                              }
+                              className="flex items-center text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-100 transition-colors"
+                            >
+                              {accountCopied ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* IFSC Code with Copy */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                            IFSC Code
+                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-mono font-bold text-gray-900">
+                              SBIN0000347
+                            </span>
+                            <button
+                              onClick={() =>
+                                copyToClipboard("SBIN0000347", setIfscCopied)
+                              }
+                              className="flex items-center text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-100 transition-colors"
+                            >
+                              {ifscCopied ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* IFSC Code */}
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                      <span className="text-sm text-gray-500">IFSC Code</span>
-                      <div className="flex items-center">
-                        <span className="text-sm font-mono font-bold text-gray-900 mr-2">
-                          SBIN0000347 {/* REPLACE THIS */}
-                        </span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText("SBIN0000347");
-                            alert("IFSC Copied!");
-                          }}
-                          className="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50"
-                        >
-                          Copy
-                        </button>
+                    {/* Processing Note */}
+                    <div className="mt-5 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <Clock className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-yellow-800">
+                          <p className="font-semibold mb-1">Processing Time</p>
+                          <p className="leading-relaxed">
+                            Bank transfers are verified within 2-4 hours during
+                            business hours. Please share your transaction
+                            reference number after transfer.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  <div className="mt-6 bg-yellow-50 border border-yellow-100 rounded-lg p-3">
-                    <p className="text-xs text-yellow-800 leading-relaxed">
-                      <strong>Note:</strong> Orders paid via Bank Transfer are
-                      processed only after the amount is credited to our
-                      account. Please share the Reference Number below after
-                      transfer.
-                    </p>
-                  </div>
-                </div>
+                </>
               )}
 
-              {/* CONFIRMATION SECTION (Common for both) */}
+              {/* CONFIRMATION SECTION */}
               <div className="pt-6 border-t border-gray-100">
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-900 font-medium mb-1">
-                    Payment Completed?
-                  </p>
-                  <p className="text-xs text-blue-700">
-                    Click the button below to verify your transaction.
-                  </p>
-                </div>
+                {paymentStatus === "pending" && (
+                  <>
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-blue-900 font-medium mb-1">
+                        ✓ Payment Completed?
+                      </p>
+                      <p className="text-xs text-blue-700">
+                        Click below to notify us and verify your transaction
+                      </p>
+                    </div>
 
-                <button
-                  onClick={handlePaymentMade}
-                  className="w-full bg-divine-orange hover:bg-orange-700 text-white font-bold py-3.5 px-6 rounded-xl transition-colors shadow-md flex items-center justify-center"
-                >
-                  <span className="mr-2">I Have Made the Payment</span>
-                  <CheckCircle className="w-5 h-5" />
-                </button>
+                    <button
+                      onClick={handlePaymentMade}
+                      className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <span className="mr-2">I Have Made the Payment</span>
+                      <CheckCircle className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {paymentStatus === "verifying" && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+                    <p className="text-sm font-semibold text-indigo-900">
+                      Verifying Payment...
+                    </p>
+                    <p className="text-xs text-indigo-600 mt-1">
+                      Please wait while we confirm your transaction
+                    </p>
+                  </div>
+                )}
+
+                {paymentStatus === "success" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle className="w-7 h-7 text-white" />
+                    </div>
+                    <p className="text-sm font-bold text-green-900">
+                      Payment Confirmed!
+                    </p>
+                    <p className="text-xs text-green-700 mt-1">
+                      Your order is being processed
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-center text-gray-400 text-xs mt-2">
-                <Shield className="w-3 h-3 mr-1" />
-                100% Secure Payments
+              {/* Security Badge */}
+              <div className="flex items-center justify-center text-gray-400 text-xs space-x-2 pt-2">
+                <Shield className="w-4 h-4" />
+                <span>256-bit SSL Encrypted • 100% Secure Payments</span>
               </div>
             </div>
           </div>
