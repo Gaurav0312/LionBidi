@@ -11,7 +11,8 @@ import {
   Calendar,
   MapPin,
   MoreHorizontal,
-  Download
+  Download,
+  Clock
 } from 'lucide-react';
 import { BASE_URL } from '../utils/api';
 
@@ -104,6 +105,36 @@ const AdminUsers = () => {
       console.error('❌ Error updating user status:', error);
       alert(`Error occurred while updating user status: ${error.message}`);
     }
+  };
+
+  // Helper function to format date and time
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Helper function to format full address
+  const formatFullAddress = (address) => {
+    if (!address) return 'N/A';
+    
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.locality) parts.push(address.locality);
+    if (address.landmark) parts.push(`Near ${address.landmark}`);
+    if (address.city) parts.push(address.city);
+    if (address.state) parts.push(address.state);
+    if (address.zipCode) parts.push(address.zipCode);
+    if (address.country && address.country !== 'India') parts.push(address.country);
+    
+    return parts.length > 0 ? parts.join(', ') : 'N/A';
   };
 
   const filteredUsers = users.filter(user => {
@@ -236,7 +267,7 @@ const AdminUsers = () => {
                     User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
+                    Contact & Address
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Orders & Spent
@@ -245,7 +276,7 @@ const AdminUsers = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Joined
+                    Last Login
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -268,10 +299,14 @@ const AdminUsers = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.phone || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">
-                        {user.address?.city || 'N/A'}, {user.address?.state || 'N/A'}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 flex items-center mb-1">
+                        <Phone className="w-3 h-3 mr-1 text-gray-400" />
+                        {user.phone || 'N/A'}
+                      </div>
+                      <div className="text-sm text-gray-500 flex items-start max-w-xs">
+                        <MapPin className="w-3 h-3 mr-1 mt-0.5 text-gray-400 flex-shrink-0" />
+                        <span className="line-clamp-2">{formatFullAddress(user.address)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -291,8 +326,14 @@ const AdminUsers = () => {
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 flex items-center">
+                        <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                        {formatDateTime(user.lastLogin)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
@@ -330,7 +371,7 @@ const AdminUsers = () => {
       {/* User Details Modal */}
       {selectedUser && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white max-h-[80vh] overflow-y-auto">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
@@ -338,7 +379,7 @@ const AdminUsers = () => {
                   onClick={() => setSelectedUser(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <Eye className="w-6 h-6" />
+                  ✕
                 </button>
               </div>
 
@@ -369,14 +410,30 @@ const AdminUsers = () => {
                       <span>{selectedUser.phone || 'N/A'}</span>
                     </div>
                     
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      <span>{selectedUser.address?.city || 'N/A'}, {selectedUser.address?.state || 'N/A'}</span>
+                    <div className="flex items-start space-x-2 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-700 mb-1">Full Address:</p>
+                        <p className="text-gray-600">{formatFullAddress(selectedUser.address)}</p>
+                        {selectedUser.address?.deliveryCharges > 0 && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Delivery Charges: ₹{selectedUser.address.deliveryCharges}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4" />
-                      <span>Joined {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</span>
+                      <span>Joined {selectedUser.createdAt ? formatDateTime(selectedUser.createdAt) : 'N/A'}</span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <Clock className="w-4 h-4" />
+                      <div>
+                        <p className="font-medium text-gray-700">Last Login:</p>
+                        <p className="text-gray-600">{formatDateTime(selectedUser.lastLogin)}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -414,12 +471,18 @@ const AdminUsers = () => {
                     
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Last Login</span>
+                        <span className="text-gray-600">Cart Items</span>
                         <span className="text-sm text-gray-600">
-                          {selectedUser.lastLogin ? 
-                            new Date(selectedUser.lastLogin).toLocaleDateString() : 
-                            'Never'
-                          }
+                          {selectedUser.cart?.length || 0} items
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Wishlist Items</span>
+                        <span className="text-sm text-gray-600">
+                          {selectedUser.wishlist?.length || 0} items
                         </span>
                       </div>
                     </div>
