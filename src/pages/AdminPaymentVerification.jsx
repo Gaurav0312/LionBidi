@@ -1,4 +1,4 @@
-// AdminPaymentVerification.jsx
+// AdminPaymentVerification.jsx - FIXED VERSION
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
@@ -27,53 +27,50 @@ const AdminPaymentVerification = () => {
   }, []);
 
   const fetchPendingVerifications = async () => {
-  try {
-    console.log('🔄 Fetching pending verifications...');
-    console.log('🔗 API URL:', `${BASE_URL}/api/orders/admin/pending-verifications`);
-    
-    const token = localStorage.getItem('adminToken');
-    console.log('🎫 Admin token exists:', !!token);
-    
-    const response = await fetch(`${BASE_URL}/api/orders/admin/pending-verifications`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log('📡 Response status:', response.status);
-    console.log('📡 Response headers:', Object.fromEntries(response.headers));
-    
-    // Handle non-JSON responses (like HTML error pages)
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const textResponse = await response.text();
-      console.error('❌ Non-JSON response received:', textResponse);
-      throw new Error(`Server returned ${response.status}: Expected JSON but got ${contentType}`);
-    }
-    
-    const data = await response.json();
-    console.log('📊 Parsed data:', data);
-    
-    if (data.success) {
-      setPendingOrders(data.orders || []);
-      console.log(`✅ Found ${data.orders?.length || 0} pending orders`);
-    } else {
-      console.error('❌ API returned error:', data.message);
-      // Don't throw here, just show empty state
-    }
-  } catch (error) {
-    console.error('❌ Error fetching pending verifications:', error);
-    // Don't throw here, just show empty state
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  const verifyPayment = async (orderId, verified) => {
     try {
-      console.log(`🔍 ${verified ? 'Verifying' : 'Rejecting'} payment for order: ${orderId}`);
+      console.log('🔄 Fetching pending verifications...');
+      console.log('🔗 API URL:', `${BASE_URL}/api/orders/admin/pending-verifications`);
+      
+      const token = localStorage.getItem('adminToken');
+      console.log('🎫 Admin token exists:', !!token);
+      
+      const response = await fetch(`${BASE_URL}/api/orders/admin/pending-verifications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers));
+      
+      // Handle non-JSON responses (like HTML error pages)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('❌ Non-JSON response received:', textResponse);
+        throw new Error(`Server returned ${response.status}: Expected JSON but got ${contentType}`);
+      }
+      
+      const data = await response.json();
+      console.log('📊 Parsed data:', data);
+      
+      if (data.success) {
+        setPendingOrders(data.orders || []);
+        console.log(`✅ Found ${data.orders?.length || 0} pending orders`);
+      } else {
+        console.error('❌ API returned error:', data.message);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching pending verifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyPayment = async (orderId) => {
+    try {
+      console.log(`🔍 Verifying payment for order: ${orderId}`);
       
       const token = localStorage.getItem('adminToken');
       const response = await fetch(`${BASE_URL}/api/orders/${orderId}/admin/verify-payment`, {
@@ -83,24 +80,71 @@ const AdminPaymentVerification = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          verified,
+          verified: true,
           notes: verificationNotes
         })
       });
 
       const data = await response.json();
+      console.log('✅ Verify response:', data);
       
       if (data.success) {
-        alert(`Payment ${verified ? 'verified' : 'rejected'} successfully!`);
+        alert('Payment verified successfully!');
         setSelectedOrder(null);
         setVerificationNotes('');
         fetchPendingVerifications(); // Refresh list
       } else {
-        alert('Failed to update payment status: ' + data.message);
+        alert('Failed to verify payment: ' + data.message);
       }
     } catch (error) {
       console.error('❌ Error verifying payment:', error);
-      alert('Error occurred while updating payment status');
+      alert('Error occurred while verifying payment: ' + error.message);
+    }
+  };
+
+  const rejectPayment = async (orderId) => {
+    // Validate rejection reason
+    if (!verificationNotes || !verificationNotes.trim()) {
+      alert('Please provide a reason for rejecting the payment in the notes field');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Are you sure you want to reject this payment? This will cancel the order and notify the customer.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      console.log(`❌ Rejecting payment for order: ${orderId}`);
+      
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${BASE_URL}/api/orders/${orderId}/admin/verify-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          verified: false,
+          notes: verificationNotes.trim()
+        })
+      });
+
+      const data = await response.json();
+      console.log('✅ Reject response:', data);
+      
+      if (data.success) {
+        alert('Payment rejected successfully! The order has been cancelled.');
+        setSelectedOrder(null);
+        setVerificationNotes('');
+        fetchPendingVerifications(); // Refresh list
+      } else {
+        alert('Failed to reject payment: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('❌ Error rejecting payment:', error);
+      alert('Error occurred while rejecting payment: ' + error.message);
     }
   };
 
@@ -234,7 +278,7 @@ const AdminPaymentVerification = () => {
         {/* Order Details Modal */}
         {selectedOrder && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white max-h-[85vh] overflow-y-auto">
               <div className="mt-3">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -242,7 +286,10 @@ const AdminPaymentVerification = () => {
                     Payment Verification - {selectedOrder.orderNumber}
                   </h3>
                   <button
-                    onClick={() => setSelectedOrder(null)}
+                    onClick={() => {
+                      setSelectedOrder(null);
+                      setVerificationNotes('');
+                    }}
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <XCircle className="w-6 h-6" />
@@ -348,21 +395,27 @@ const AdminPaymentVerification = () => {
                 {/* Verification Notes */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Verification Notes (Optional)
+                    Verification Notes {' '}
+                    <span className="text-red-600">* Required for rejection</span>
                   </label>
                   <textarea
                     value={verificationNotes}
                     onChange={(e) => setVerificationNotes(e.target.value)}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Add notes about the verification (optional)..."
+                    placeholder="Add notes about the verification. Required if rejecting the payment..."
                   />
+                  {!verificationNotes.trim() && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      💡 Note: Rejection reason is mandatory when rejecting a payment
+                    </p>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => verifyPayment(selectedOrder._id, true)}
+                    onClick={() => verifyPayment(selectedOrder._id)}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -370,7 +423,7 @@ const AdminPaymentVerification = () => {
                   </button>
                   
                   <button
-                    onClick={() => verifyPayment(selectedOrder._id, false)}
+                    onClick={() => rejectPayment(selectedOrder._id)}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
                     <XCircle className="w-4 h-4 mr-2" />
