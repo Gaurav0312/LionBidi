@@ -1,4 +1,4 @@
-// PaymentVerificationPage.jsx - Fixed version with controlled polling
+// PaymentVerificationPage.jsx - Fixed version with reject payment
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Home,
+  Ban,
 } from "lucide-react";
 import api from "../utils/api";
 
@@ -21,7 +22,10 @@ const PaymentVerificationPage = () => {
   const [order, setOrder] = useState(location.state?.order || null);
   const [verificationStatus, setVerificationStatus] = useState("pending");
   const [loading, setLoading] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [lastPolled, setLastPolled] = useState(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   
   // Use refs to prevent multiple polling instances
   const pollingIntervalRef = useRef(null);
@@ -38,12 +42,12 @@ const PaymentVerificationPage = () => {
 
   // Single polling function with better control
   const pollStatus = async () => {
-
     if (window.location.pathname !== `/payment-verification/${orderNumber}`) {
-    console.log('User navigated away, stopping polling');
-    clearPolling();
-    return;
-  }
+      console.log('User navigated away, stopping polling');
+      clearPolling();
+      return;
+    }
+
     // Prevent multiple simultaneous calls
     if (isPollingRef.current) {
       console.log('Polling already in progress, skipping...');
@@ -168,8 +172,58 @@ const PaymentVerificationPage = () => {
       }
     } catch (error) {
       console.error("Error refreshing status:", error);
+      alert("Failed to refresh status. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRejectPayment = async () => {
+    if (!rejectReason.trim()) {
+      alert("Please provide a reason for rejection");
+      return;
+    }
+
+    if (rejecting) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to reject this payment? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    setRejecting(true);
+    console.log('Rejecting payment for order:', orderNumber);
+
+    try {
+      const response = await api.post(
+        `/api/orders/${order._id}/reject-payment`,
+        {
+          reason: rejectReason,
+          orderNumber: orderNumber
+        }
+      );
+
+      if (response.data.success) {
+        const updatedOrder = response.data.order;
+        setOrder(updatedOrder);
+        setVerificationStatus("failed");
+        setShowRejectModal(false);
+        setRejectReason("");
+        clearPolling();
+        
+        alert("Payment has been rejected successfully");
+      } else {
+        alert(response.data.message || "Failed to reject payment");
+      }
+    } catch (error) {
+      console.error("Error rejecting payment:", error);
+      alert(
+        error.response?.data?.message || 
+        "Failed to reject payment. Please try again."
+      );
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -330,14 +384,26 @@ const PaymentVerificationPage = () => {
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <button
             onClick={handleRefreshStatus}
-            disabled={loading}
-            className="flex items-center justify-center px-6 py-3 bg-[#FF6B35] text-white rounded-lg hover:scale-[1.02] transition-colors disabled:opacity-50"
+            disabled={loading || verificationStatus !== "pending"}
+            className="flex items-center justify-center px-6 py-3 bg-[#FF6B35] text-white rounded-lg hover:scale-[1.02] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw
               className={`w-5 h-5 mr-2 ${loading ? "animate-spin" : ""}`}
             />
             {loading ? "Checking..." : "Refresh Status"}
           </button>
+
+          {/* Reject Payment Button - Only show if pending */}
+          {verificationStatus === "pending" && (
+            <button
+              onClick={() => setShowRejectModal(true)}
+              disabled={rejecting}
+              className="flex items-center justify-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Ban className={`w-5 h-5 mr-2`} />
+              Reject Payment
+            </button>
+          )}
 
           <button
             onClick={() => navigate("/")}
@@ -348,23 +414,16 @@ const PaymentVerificationPage = () => {
           </button>
         </div>
 
-        
-
-        {/* Next Steps and Contact Support sections remain the same... */}
+        {/* What happens next */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             What happens next?
-
-            
           </h3>
 
           <p className="text-gray-600 mb-2">
             Your payment is being processed. You will receive a confirmation
             email once the payment is verified.
           </p>
-          
-          
-          {/* Rest of your existing content... */}
         </div>
 
         {/* Contact Support */}
@@ -390,11 +449,63 @@ const PaymentVerificationPage = () => {
               className="flex items-center text-divine-orange hover:underline"
             >
               <Mail className="w-4 h-4 mr-2" />
-              lionbidicompany@gmail.com
+              lionbidi company@gmail.com
             </a>
           </div>
         </div>
       </div>
+
+      {/* Reject Payment Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <Ban className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Reject Payment
+              </h3>
+            </div>
+
+            <p className="text-gray-600 mb-4">
+              Please provide a reason for rejecting this payment. The customer will be notified.
+            </p>
+
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Enter rejection reason..."
+              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-red-500 focus:border-red-500 min-h-[100px]"
+              maxLength={500}
+            />
+
+            <div className="text-sm text-gray-500 mb-4">
+              {rejectReason.length}/500 characters
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleRejectPayment}
+                disabled={rejecting || !rejectReason.trim()}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {rejecting ? "Rejecting..." : "Confirm Rejection"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                }}
+                disabled={rejecting}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
