@@ -490,7 +490,7 @@ const ProductDetailPage = () => {
         name: "Lion Bidi",
       },
       image: product.images || [product.image],
-      url: `https://www.lionbidi.shop/product/${product.slug}`,
+      url: `https://www.lionbidi.in/product/${product.slug}`,
       sku: product.id,
       offers: {
         "@type": "Offer",
@@ -499,11 +499,11 @@ const ProductDetailPage = () => {
         availability: product.inStock
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
-        url: `https://www.lionbidi.shop/product/${product.slug}`,
+        url: `https://www.lionbidi.in/product/${product.slug}`,
         seller: {
           "@type": "Organization",
           name: "Lion Bidi",
-          url: "https://www.lionbidi.shop",
+          url: "https://www.lionbidi.in",
         },
       },
       aggregateRating: {

@@ -18,4 +18,4 @@ Allow: /products
 Allow: /categories
 Allow: /search
 
-Sitemap: https://www.lionbidi.shop/sitemap.xml
+Sitemap: https://www.lionbidi.in/sitemap.xml

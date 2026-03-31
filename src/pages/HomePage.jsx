@@ -53,13 +53,13 @@ const HomePage = () => {
         title="Buy Bidi Online India | Lion Bidi - Premium Tobacco Products"
         description="Buy premium bidi online from Lion Bidi - Madhya Pradesh's trusted bidi manufacturer. Authentic handcrafted bidi with fast delivery."
         keywords="buy bidi online, bidi online india, tobacco products, lion bidi, madhya pradesh bidi"
-        canonicalUrl="https://www.lionbidi.shop"
+        canonicalUrl="https://www.lionbidi.in"
         schema={{
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "Lion Bidi",
-          url: "https://www.lionbidi.shop",
-          logo: "https://www.lionbidi.shop/logo512.png",
+          url: "https://www.lionbidi.in",
+          logo: "https://www.lionbidi.in/logo512.png",
           sameAs: [
             "https://www.facebook.com/yourpage",
             "https://www.instagram.com/yourpage",
@@ -77,10 +77,10 @@ const HomePage = () => {
             "@graph": [
               {
                 "@type": "Organization",
-                "@id": "https://www.lionbidi.shop/#organization",
+                "@id": "https://www.lionbidi.in/#organization",
                 name: "Lion Bidi",
-                url: "https://www.lionbidi.shop",
-                logo: "https://www.lionbidi.shop/logo.png",
+                url: "https://www.lionbidi.in",
+                logo: "https://www.lionbidi.in/logo.png",
                 description:
                   "Premium bidi and tobacco products manufacturer from Madhya Pradesh, India",
                 address: {
@@ -96,22 +96,22 @@ const HomePage = () => {
               },
               {
                 "@type": "WebSite",
-                "@id": "https://www.lionbidi.shop/#website",
-                url: "https://www.lionbidi.shop",
+                "@id": "https://www.lionbidi.in/#website",
+                url: "https://www.lionbidi.in",
                 name: "Lion Bidi - Buy Bidi Online India",
                 description:
                   "Buy premium bidi online from India's trusted tobacco manufacturer",
                 potentialAction: {
                   "@type": "SearchAction",
                   target:
-                    "https://www.lionbidi.shop/search?q={search_term_string}",
+                    "https://www.lionbidi.in/search?q={search_term_string}",
                   "query-input": "required name=search_term_string",
                 },
               },
               {
                 "@type": "Store",
                 name: "Lion Bidi Online Store",
-                url: "https://www.lionbidi.shop",
+                url: "https://www.lionbidi.in",
                 description:
                   "Premium quality bidi manufacturer from Madhya Pradesh. Buy bidi online with fast delivery.",
                 hasOfferCatalog: {
@@ -120,7 +120,7 @@ const HomePage = () => {
                   itemListElement: bestsellers.map((product) => ({
                     "@type": "Product",
                     name: product.name,
-                    image: `https://www.lionbidi.shop/${product.image}`,
+                    image: `https://www.lionbidi.in/${product.image}`,
                     description: product.description,
                     brand: {
                       "@type": "Brand",
@@ -128,7 +128,7 @@ const HomePage = () => {
                     },
                     offers: {
                       "@type": "Offer",
-                      url: `https://www.lionbidi.shop/product/${product.slug}`,
+                      url: `https://www.lionbidi.in/product/${product.slug}`,
                       priceCurrency: "INR",
                       price: product.price,
                       availability: "https://schema.org/InStock",

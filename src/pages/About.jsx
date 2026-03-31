@@ -21,14 +21,14 @@ const About = () => {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="About Lion Bidi | Premium Bidi Online" />
         <meta property="og:description" content="Discover the story of Lion Bidi – trusted bidi brand from Madhya Pradesh, delivering authentic taste nationwide." />
-        <meta property="og:image" content="https://www.lionbidi.shop/og-image.jpg" />
-        <meta property="og:url" content="https://www.lionbidi.shop/about" />
+        <meta property="og:image" content="https://www.lionbidi.in/og-image.jpg" />
+        <meta property="og:url" content="https://www.lionbidi.in/about" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About Lion Bidi | Premium Bidi Online" />
         <meta name="twitter:description" content="Discover the heritage of Lion Bidi – premium bidi crafted with natural tobacco leaves." />
-        <meta name="twitter:image" content="https://www.lionbidi.shop/og-image.jpg" />
+        <meta name="twitter:image" content="https://www.lionbidi.in/og-image.jpg" />
 
         {/* Breadcrumb Schema */}
         <script type="application/ld+json">
@@ -40,13 +40,13 @@ const About = () => {
                 "@type": "ListItem",
                 position: 1,
                 name: "Home",
-                item: "https://www.lionbidi.shop"
+                item: "https://www.lionbidi.in"
               },
               {
                 "@type": "ListItem",
                 position: 2,
                 name: "About",
-                item: "https://www.lionbidi.shop/about"
+                item: "https://www.lionbidi.in/about"
               }
             ]
           })}
