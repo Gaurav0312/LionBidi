@@ -12,6 +12,7 @@ Disallow: /wishlist
 Disallow: /profile
 Disallow: /admin
 Disallow: /auth/
+Disallow: /*?*
 
 # Allow important e-commerce pages
 Allow: /products
