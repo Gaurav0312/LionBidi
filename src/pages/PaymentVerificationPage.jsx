@@ -122,8 +122,8 @@ const PaymentVerificationPage = () => {
     // Initial check
     pollStatus();
 
-    // Set up interval (60 seconds to reduce server load)
-    pollingIntervalRef.current = setInterval(pollStatus, 60000);
+    // Set up interval (5 minutes to reduce server load)
+    pollingIntervalRef.current = setInterval(pollStatus, 300000);
   };
 
   // Effect to start polling when component mounts or order changes
@@ -278,7 +278,7 @@ const PaymentVerificationPage = () => {
                 <div className="flex items-center">
                   <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                   <span className="text-blue-800 text-sm">
-                    Auto-checking status every 60 seconds
+                    Auto-checking status every 5 minutes
                   </span>
                 </div>
                 {lastPolled && (
