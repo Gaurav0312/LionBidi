@@ -173,13 +173,12 @@ const AddressPage = () => {
       setPinCodeStatus("");
 
       try {
-        const response = await fetch(
-          `https://api.postalpincode.in/pincode/${pincode}`
-        );
-        const data = await response.json();
+        // Use backend proxy to avoid SSL/CORS issues with third-party API
+        const response = await api.get(`/pincode/${pincode}`);
+        const responseData = response.data;
 
-        if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
-          const postOffices = data[0].PostOffice;
+        if (responseData.success && responseData.data?.[0]?.Status === "Success" && responseData.data[0].PostOffice?.length > 0) {
+          const postOffices = responseData.data[0].PostOffice;
           const primaryLocation = postOffices[0];
 
           setFormData((prev) => ({
@@ -221,6 +220,7 @@ const AddressPage = () => {
     },
     [calculateDeliveryCharges] // ✅ Depend on the memoized function
   );
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
