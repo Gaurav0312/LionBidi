@@ -174,7 +174,7 @@ const AddressPage = () => {
 
       try {
         // Use backend proxy to avoid SSL/CORS issues with third-party API
-        const response = await api.get(`/pincode/${pincode}`);
+        const response = await api.get(`/api/delivery/pincode/${pincode}`);
         const responseData = response.data;
 
         if (responseData.success && responseData.data?.[0]?.Status === "Success" && responseData.data[0].PostOffice?.length > 0) {
