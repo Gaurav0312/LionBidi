@@ -157,10 +157,30 @@ const CheckoutPage = () => {
   useEffect(() => {
     const createOrder = async () => {
       if (existingOrder) {
-        console.log("Using existing order:", existingOrder);
+        console.log("Using existing order from navigation state:", existingOrder);
         setCreatedOrder(existingOrder);
+        // Persist to sessionStorage so reloads don't create duplicates
+        sessionStorage.setItem("checkoutOrderId", existingOrder._id);
+        sessionStorage.setItem("checkoutOrder", JSON.stringify(existingOrder));
         return;
       }
+
+      // Check if we already have a saved order from a previous load/reload
+      const savedOrderId = sessionStorage.getItem("checkoutOrderId");
+      const savedOrderJson = sessionStorage.getItem("checkoutOrder");
+      if (savedOrderId && savedOrderJson) {
+        try {
+          const savedOrder = JSON.parse(savedOrderJson);
+          console.log("Restoring order from session:", savedOrder.orderNumber);
+          setCreatedOrder(savedOrder);
+          return;
+        } catch (e) {
+          console.warn("Failed to parse saved order, will check backend");
+          sessionStorage.removeItem("checkoutOrderId");
+          sessionStorage.removeItem("checkoutOrder");
+        }
+      }
+
       // More robust validation
       if (!user) {
         console.log("User not authenticated, cannot create order");
@@ -181,6 +201,39 @@ const CheckoutPage = () => {
 
       if (createdOrder || isCreatingOrder) {
         return; // Already created or in progress
+      }
+
+      // Check backend for existing pending order before creating a new one
+      try {
+        const existingRes = await api.get("/api/orders");
+        if (existingRes.data.success && existingRes.data.orders) {
+          const pendingOrder = existingRes.data.orders.find(
+            (o) =>
+              o.status === "pending" &&
+              (o.paymentStatus === "pending" || o.payment?.paymentStatus === "pending") &&
+              // Match same total to ensure it's the same checkout session
+              Math.abs(o.total - (cart.total + deliveryCharges)) < 1
+          );
+          if (pendingOrder) {
+            console.log(
+              "Found existing pending order on backend:",
+              pendingOrder.orderNumber
+            );
+            setCreatedOrder(pendingOrder);
+            sessionStorage.setItem("checkoutOrderId", pendingOrder._id);
+            sessionStorage.setItem(
+              "checkoutOrder",
+              JSON.stringify(pendingOrder)
+            );
+            return;
+          }
+        }
+      } catch (checkError) {
+        console.warn(
+          "Could not check for existing orders:",
+          checkError.message
+        );
+        // Continue to create a new order
       }
 
       setIsCreatingOrder(true);
@@ -234,6 +287,12 @@ const CheckoutPage = () => {
 
         if (response.data.success) {
           setCreatedOrder(response.data.order);
+          // Persist to sessionStorage to survive reloads
+          sessionStorage.setItem("checkoutOrderId", response.data.order._id);
+          sessionStorage.setItem(
+            "checkoutOrder",
+            JSON.stringify(response.data.order)
+          );
           console.log(
             "Order created successfully:",
             response.data.order.orderNumber,
@@ -401,6 +460,9 @@ const CheckoutPage = () => {
       );
 
       if (response.data.success) {
+        // Clean up sessionStorage since payment is done
+        sessionStorage.removeItem("checkoutOrderId");
+        sessionStorage.removeItem("checkoutOrder");
         // Navigate to PaymentVerificationPage (this should work now)
         navigate(`/payment-verification/${response.data.orderNumber}`, {
           state: {
