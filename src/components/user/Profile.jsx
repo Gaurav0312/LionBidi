@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "../../context/AppContext";
 import {
   User,
@@ -24,6 +24,7 @@ const Profile = () => {
   const { user, login, userAddress, fetchUserAddress } = useAppContext();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -50,6 +51,7 @@ const Profile = () => {
   const [pinCodeStatus, setPinCodeStatus] = useState("");
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressErrors, setAddressErrors] = useState({});
 
   // Load user data and addresses on mount
   useEffect(() => {
@@ -127,7 +129,7 @@ const Profile = () => {
   };
 
   // Pincode validation
-  const validatePincode = async (pincode) => {
+  const validatePincode = useCallback(async (pincode) => {
     if (pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
       setPinCodeStatus("");
       return;
@@ -137,11 +139,12 @@ const Profile = () => {
     setPinCodeStatus("");
 
     try {
-      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-      const data = await response.json();
+      // Use backend proxy to avoid SSL/CORS issues with third-party API
+      const response = await api.get(`/api/delivery/pincode/${pincode}`);
+      const responseData = response.data;
 
-      if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
-        const primaryLocation = data[0].PostOffice[0];
+      if (responseData.success && responseData.data?.[0]?.Status === "Success" && responseData.data[0].PostOffice?.length > 0) {
+        const primaryLocation = responseData.data[0].PostOffice[0];
         
         setNewAddress(prev => ({
           ...prev,
@@ -156,32 +159,70 @@ const Profile = () => {
       }
     } catch (error) {
       console.error("Error validating pincode:", error);
-      setPinCodeStatus("invalid");
+      setPinCodeStatus("error");
+      // Don't clear city/state on network error — let user enter manually
     } finally {
       setIsPinCodeLoading(false);
     }
-  };
+  }, []);
+
 
   const handleSaveProfile = async () => {
+    // Validate
+    if (!profileData.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    if (profileData.phone && !/^\d{10}$/.test(profileData.phone)) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+
+    setIsSavingProfile(true);
     try {
-      const updatedUser = {
-        ...user,
-        name: profileData.name,
-        email: profileData.email,
-        phone: profileData.phone,
-      };
-      login(updatedUser);
-      toast.success("Profile updated successfully");
-      setIsEditing(false);
+      const response = await api.put("/api/auth/profile", {
+        name: profileData.name.trim(),
+        phone: profileData.phone.trim(),
+      });
+
+      if (response.data.user) {
+        // Update context with the returned user data
+        const updatedUser = {
+          ...user,
+          name: response.data.user.name,
+          phone: response.data.user.phone,
+        };
+        login(updatedUser);
+        toast.success("Profile updated successfully");
+        setIsEditing(false);
+      } else {
+        toast.success(response.data.message || "Profile updated successfully");
+        // Update context with local data as fallback
+        const updatedUser = {
+          ...user,
+          name: profileData.name.trim(),
+          phone: profileData.phone.trim(),
+        };
+        login(updatedUser);
+        setIsEditing(false);
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      const errorMessage = error.response?.data?.message || "Failed to update profile";
+      toast.error(errorMessage);
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
   const handleAddressInputChange = (e) => {
     const { name, value } = e.target;
     
+    // Clear field-specific error when user types
+    if (addressErrors[name]) {
+      setAddressErrors(prev => ({ ...prev, [name]: "" }));
+    }
+
     if (name === "pincode") {
       const numericValue = value.replace(/\D/g, "").slice(0, 6);
       setNewAddress(prev => ({ ...prev, [name]: numericValue }));
@@ -192,27 +233,39 @@ const Profile = () => {
         setNewAddress(prev => ({ ...prev, city: "", state: "" }));
         setPinCodeStatus("");
       }
+    } else if (name === "phone") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 10);
+      setNewAddress(prev => ({ ...prev, [name]: numericValue }));
     } else {
       setNewAddress(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const validateAddressForm = () => {
-    const errors = [];
+    const errors = {};
     
-    if (!newAddress.name?.trim()) errors.push("Name is required");
-    if (!newAddress.street?.trim()) errors.push("Address is required");
-    if (!newAddress.city?.trim()) errors.push("City is required");
-    if (!newAddress.state?.trim()) errors.push("State is required");
-    if (!newAddress.pincode?.trim()) errors.push("Pincode is required");
-    if (!newAddress.phone?.trim()) errors.push("Phone is required");
+    if (!newAddress.name?.trim()) errors.name = "Name is required";
+    if (!newAddress.street?.trim()) errors.street = "Address is required";
+    if (!newAddress.pincode?.trim()) {
+      errors.pincode = "Pincode is required";
+    } else if (!/^\d{6}$/.test(newAddress.pincode)) {
+      errors.pincode = "Pincode must be 6 digits";
+    } else if (pinCodeStatus === "invalid") {
+      errors.pincode = "Invalid pincode — not found in India Post database";
+    }
+    if (!newAddress.city?.trim()) errors.city = "City is required";
+    if (!newAddress.state?.trim()) errors.state = "State is required";
+    if (!newAddress.phone?.trim()) {
+      errors.phone = "Phone is required";
+    } else if (!/^\d{10}$/.test(newAddress.phone)) {
+      errors.phone = "Phone must be 10 digits";
+    }
     
-    if (!/^\d{10}$/.test(newAddress.phone)) errors.push("Phone must be 10 digits");
-    if (!/^\d{6}$/.test(newAddress.pincode)) errors.push("Pincode must be 6 digits");
-    if (pinCodeStatus === "invalid") errors.push("Invalid pincode");
-    
-    if (errors.length > 0) {
-      toast.error(errors[0]);
+    setAddressErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // Show the first error as a toast too
+      toast.error(Object.values(errors)[0]);
       return false;
     }
     
@@ -317,7 +370,17 @@ const Profile = () => {
       landmark: address.landmark || "",
     });
     setEditingAddress(address);
+    setAddressErrors({});
     setShowAddressForm(true);
+
+    // Re-validate the existing pincode to set correct status
+    if (address.pincode && /^\d{6}$/.test(address.pincode)) {
+      // Set a temporary "checking" status while we validate
+      setPinCodeStatus("");
+      validatePincode(address.pincode);
+    } else {
+      setPinCodeStatus("");
+    }
   };
 
   const handleDeleteAddress = async (address) => {
@@ -384,6 +447,7 @@ const Profile = () => {
     setShowAddressForm(false);
     setEditingAddress(null);
     setPinCodeStatus("");
+    setAddressErrors({});
   };
 
   const handleAddNewAddress = () => {
@@ -398,7 +462,17 @@ const Profile = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Profile Information</h2>
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              if (isEditing) {
+                // Cancel editing - reset to original values
+                setProfileData({
+                  name: user?.name || "",
+                  email: user?.email || "",
+                  phone: user?.phone || "",
+                });
+              }
+              setIsEditing(!isEditing);
+            }}
             className="flex items-center space-x-2 px-4 py-2 text-orange-600 border border-orange-500 rounded-lg hover:bg-orange-50"
           >
             {isEditing ? <X size={16} /> : <Edit3 size={16} />}
@@ -428,18 +502,25 @@ const Profile = () => {
             <input
               type="email"
               value={profileData.email}
-              onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-              disabled={!isEditing}
+              disabled={true}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+              title="Email cannot be changed"
             />
+            {isEditing && (
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input
               type="tel"
               value={profileData.phone}
-              onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/\D/g, "").slice(0, 10);
+                setProfileData({ ...profileData, phone: numericValue });
+              }}
               disabled={!isEditing}
+              maxLength={10}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
             />
           </div>
@@ -449,10 +530,20 @@ const Profile = () => {
           <div className="mt-6">
             <button
               onClick={handleSaveProfile}
-              className="px-6 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600"
+              disabled={isSavingProfile}
+              className="px-6 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center space-x-2"
             >
-              <Save size={16} className="inline mr-2" />
-              Save Changes
+              {isSavingProfile ? (
+                <>
+                  <Loader className="animate-spin h-4 w-4" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span>Save Changes</span>
+                </>
+              )}
             </button>
           </div>
         )}
@@ -566,8 +657,13 @@ const Profile = () => {
                     placeholder="Full Name"
                     value={newAddress.name}
                     onChange={handleAddressInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                      addressErrors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                   />
+                  {addressErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -581,8 +677,13 @@ const Profile = () => {
                     value={newAddress.phone}
                     onChange={handleAddressInputChange}
                     maxLength={10}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                      addressErrors.phone ? "border-red-500" : "border-gray-300"
+                    }`}
                   />
+                  {addressErrors.phone && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -597,8 +698,13 @@ const Profile = () => {
                   value={newAddress.street}
                   onChange={handleAddressInputChange}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 resize-none"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 resize-none ${
+                    addressErrors.street ? "border-red-500" : "border-gray-300"
+                  }`}
                 />
+                {addressErrors.street && (
+                  <p className="text-red-500 text-xs mt-1">{addressErrors.street}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -644,6 +750,7 @@ const Profile = () => {
                       onChange={handleAddressInputChange}
                       maxLength={6}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                        addressErrors.pincode ? "border-red-500" :
                         pinCodeStatus === "valid" ? "border-green-500" : 
                         pinCodeStatus === "invalid" ? "border-red-500" : "border-gray-300"
                       }`}
@@ -653,13 +760,22 @@ const Profile = () => {
                         <Loader className="animate-spin h-4 w-4 text-orange-600" />
                       </div>
                     )}
-                    {pinCodeStatus === "valid" && (
+                    {!isPinCodeLoading && pinCodeStatus === "valid" && (
                       <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
                     )}
-                    {pinCodeStatus === "invalid" && (
+                    {!isPinCodeLoading && pinCodeStatus === "invalid" && (
                       <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
                     )}
                   </div>
+                  {addressErrors.pincode && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.pincode}</p>
+                  )}
+                  {!addressErrors.pincode && pinCodeStatus === "invalid" && (
+                    <p className="text-red-500 text-xs mt-1">Invalid pincode</p>
+                  )}
+                  {pinCodeStatus === "error" && (
+                    <p className="text-yellow-600 text-xs mt-1">Could not verify — enter city/state manually</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
@@ -670,8 +786,13 @@ const Profile = () => {
                     value={newAddress.city}
                     onChange={handleAddressInputChange}
                     readOnly={pinCodeStatus === "valid"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                      addressErrors.city ? "border-red-500" : "border-gray-300"
+                    } ${pinCodeStatus === "valid" ? "bg-gray-50" : ""}`}
                   />
+                  {addressErrors.city && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
@@ -682,8 +803,13 @@ const Profile = () => {
                     value={newAddress.state}
                     onChange={handleAddressInputChange}
                     readOnly={pinCodeStatus === "valid"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 ${
+                      addressErrors.state ? "border-red-500" : "border-gray-300"
+                    } ${pinCodeStatus === "valid" ? "bg-gray-50" : ""}`}
                   />
+                  {addressErrors.state && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.state}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -691,7 +817,7 @@ const Profile = () => {
             <div className="flex space-x-3 mt-6">
               <button
                 onClick={handleSaveAddress}
-                disabled={isSavingAddress}
+                disabled={isSavingAddress || isPinCodeLoading}
                 className="px-6 py-2 bg-[#FF6B35] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center space-x-2"
               >
                 {isSavingAddress ? (
