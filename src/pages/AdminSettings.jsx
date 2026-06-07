@@ -12,7 +12,9 @@ import {
   EyeOff,
   User,
   Plus,
-  Trash2
+  Trash2,
+  Wrench,
+  AlertTriangle
 } from 'lucide-react';
 
 const AdminSettings = () => {
@@ -61,6 +63,16 @@ const AdminSettings = () => {
 
   const [adminList, setAdminList] = useState([]);
 
+  // Maintenance mode state
+  const [maintenance, setMaintenance] = useState({
+    enabled: false,
+    message: 'We are currently performing scheduled maintenance. We\'ll be back shortly!',
+    estimatedEndTime: '',
+    allowedEmails: []
+  });
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [maintenanceSaved, setMaintenanceSaved] = useState(false);
+
   useEffect(() => {
     const savedAdminData = localStorage.getItem('adminData');
     if (savedAdminData) {
@@ -71,6 +83,7 @@ const AdminSettings = () => {
       }
     }
     fetchAdminList();
+    fetchMaintenanceStatus();
   }, []);
 
   const fetchAdminList = async () => {
@@ -108,6 +121,61 @@ const AdminSettings = () => {
           lastLogin: new Date('2024-01-20')
         }
       ]);
+    }
+  };
+
+  const fetchMaintenanceStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/maintenance', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      
+      const data = await response.json();
+      if (data.success && data.maintenance) {
+        setMaintenance({
+          enabled: data.maintenance.enabled || false,
+          message: data.maintenance.message || 'We are currently performing scheduled maintenance. We\'ll be back shortly!',
+          estimatedEndTime: data.maintenance.estimatedEndTime || '',
+          allowedEmails: data.maintenance.allowedEmails || []
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching maintenance status:', error);
+    }
+  };
+
+  const handleSaveMaintenance = async () => {
+    setMaintenanceLoading(true);
+    setMaintenanceSaved(false);
+    try {
+      const response = await fetch('/api/admin/maintenance', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({
+          enabled: maintenance.enabled,
+          message: maintenance.message,
+          estimatedEndTime: maintenance.estimatedEndTime || null,
+          allowedEmails: maintenance.allowedEmails
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setMaintenanceSaved(true);
+        setTimeout(() => setMaintenanceSaved(false), 3000);
+      } else {
+        alert(data.message || 'Failed to save maintenance settings');
+      }
+    } catch (error) {
+      console.error('Error saving maintenance settings:', error);
+      alert('Error occurred while saving maintenance settings');
+    } finally {
+      setMaintenanceLoading(false);
     }
   };
 
@@ -183,6 +251,7 @@ const AdminSettings = () => {
 
   const tabs = [
     { id: 'general', name: 'General', icon: SettingsIcon },
+    { id: 'maintenance', name: 'Maintenance', icon: Wrench },
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'payment', name: 'Payment', icon: Mail },
@@ -323,6 +392,114 @@ const AdminSettings = () => {
                         <option value="America/New_York">America/New_York</option>
                       </select>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Maintenance Mode */}
+            {activeTab === 'maintenance' && (
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Maintenance Mode</h2>
+                    <p className="text-sm text-gray-500">Control site availability for users</p>
+                  </div>
+                  <button
+                    onClick={handleSaveMaintenance}
+                    disabled={maintenanceLoading}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {maintenanceLoading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+
+                {/* Success message */}
+                {maintenanceSaved && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                    ✅ Maintenance settings saved successfully!
+                  </div>
+                )}
+
+                {/* Warning banner when maintenance is ON */}
+                {maintenance.enabled && (
+                  <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start space-x-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-amber-800">Maintenance Mode is ACTIVE</h3>
+                      <p className="text-sm text-amber-700 mt-1">
+                        All regular users are currently blocked from accessing the site. Only admin panel routes are accessible.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  {/* Main toggle */}
+                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                      <h3 className="font-medium text-gray-900">Enable Maintenance Mode</h3>
+                      <p className="text-sm text-gray-500">
+                        When enabled, users will see a maintenance page and cannot login or browse the site
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        maintenance.enabled
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {maintenance.enabled ? 'ACTIVE' : 'OFF'}
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={maintenance.enabled}
+                          onChange={(e) => setMaintenance({
+                            ...maintenance,
+                            enabled: e.target.checked
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Maintenance message */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maintenance Message
+                    </label>
+                    <textarea
+                      value={maintenance.message}
+                      onChange={(e) => setMaintenance({
+                        ...maintenance,
+                        message: e.target.value
+                      })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Message to display on the maintenance page"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">This message will be shown to users on the maintenance page</p>
+                  </div>
+
+                  {/* Estimated end time */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimated End Time (optional)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={maintenance.estimatedEndTime ? new Date(new Date(maintenance.estimatedEndTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => setMaintenance({
+                        ...maintenance,
+                        estimatedEndTime: e.target.value ? new Date(e.target.value).toISOString() : ''
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">If set, a countdown timer will be shown to users</p>
                   </div>
                 </div>
               </div>
