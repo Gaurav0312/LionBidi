@@ -1163,7 +1163,7 @@ For support: +91 95897 73525 | lionbidicompany@gmail.com
             <div className="border-t pt-6">
               <div className="flex flex-wrap gap-3">
                 {/* Download Receipt Button in Modal */}
-                {canDownloadReceipt(selectedOrder) && (
+                {/*canDownloadReceipt(selectedOrder) && (
                   <button
                     onClick={() => downloadReceipt(selectedOrder)}
                     className="flex items-center gap-2 bg-[#FF6B35] text-white px-4 py-2 rounded-lg hover:bg-[#FF6B35]/90 transition-colors font-medium"
