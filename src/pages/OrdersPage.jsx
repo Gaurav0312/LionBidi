@@ -909,7 +909,7 @@ For support: +91 95897 73525 | lionbidicompany@gmail.com
             )}
 
             {/* Download Receipt Button - NEW */}
-            {canDownloadReceipt(order) && (
+            {/* {canDownloadReceipt(order) && (
               <button
                 onClick={() => downloadReceiptWithFullData(order._id)}
                 className="flex items-center justify-center gap-2 border border-divine-orange text-divine-orange px-4 py-2 rounded-lg hover:bg-divine-orange/10 transition-colors font-medium"
@@ -917,7 +917,7 @@ For support: +91 95897 73525 | lionbidicompany@gmail.com
                 <Download size={16} />
                 Download Receipt
               </button>
-            )}
+            )} */}
 
             {/* Delete Button - only show for deletable orders */}
             {canDeleteOrder(order) && (
