@@ -1,5 +1,5 @@
 // pages/AdminUsers.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search,
   Filter,
@@ -12,93 +12,194 @@ import {
   MapPin,
   MoreHorizontal,
   Download,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 import { BASE_URL } from '../utils/api';
 
+const PAGE_SIZE = 50;
+const SEARCH_DEBOUNCE_MS = 400;
+
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true); // first paint only
+  const [fetching, setFetching] = useState(false); // every subsequent fetch
+  const [fetchError, setFetchError] = useState(null);
+
+  const [searchInput, setSearchInput] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // debounced value sent to API
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pages: 1,
+    total: 0,
+    limit: PAGE_SIZE,
+  });
+
+  // Stats cards need counts across ALL users, not just this page —
+  // fetched separately and independent of pagination/search/filter.
+  const [globalStats, setGlobalStats] = useState({
+    active: 0,
+    inactive: 0,
+    newThisWeek: 0,
+  });
+
   const [selectedUser, setSelectedUser] = useState(null);
 
+  const abortControllerRef = useRef(null);
+  const debounceRef = useRef(null);
+
   useEffect(() => {
-    fetchUsers();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchTerm(searchInput);
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  const fetchUsers = useCallback(
+    async (targetPage) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        setFetching(true);
+        setFetchError(null);
+
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          setFetchError("You're not logged in as admin. Please log in again.");
+          setUsers([]);
+          return;
+        }
+
+        const params = new URLSearchParams({
+          page: String(targetPage),
+          limit: String(PAGE_SIZE),
+        });
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        if (searchTerm.trim()) params.set('search', searchTerm.trim());
+
+        const response = await fetch(`${BASE_URL}/api/admin/users?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(
+            `Server returned ${response.status}: Expected JSON but got ${contentType}. ${text.slice(0, 200)}`
+          );
+        }
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || `Request failed (${response.status})`);
+        }
+
+        setUsers(data.users || []);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error('❌ Error fetching users:', error);
+        setFetchError(error.message || 'Failed to fetch users.');
+        setUsers([]);
+      } finally {
+        if (abortControllerRef.current === controller) {
+          setFetching(false);
+          setLoading(false);
+        }
+      }
+    },
+    [statusFilter, searchTerm]
+  );
+
+  useEffect(() => {
+    fetchUsers(page);
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, statusFilter, searchTerm]);
+
+  // Stats cards: fetch once on mount, independent of the paginated table.
+  // Uses the same /users endpoint with a high limit just for counts —
+  // if you have a lot of users, swap this for a dedicated /admin/users/stats
+  // endpoint that runs countDocuments() server-side instead.
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const [activeRes, inactiveRes] = await Promise.all([
+          fetch(`${BASE_URL}/api/admin/users?status=active&limit=1`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${BASE_URL}/api/admin/users?status=inactive&limit=1`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        const activeData = await activeRes.json();
+        const inactiveData = await inactiveRes.json();
+
+        setGlobalStats((prev) => ({
+          ...prev,
+          active: activeData?.pagination?.total || 0,
+          inactive: inactiveData?.pagination?.total || 0,
+        }));
+      } catch (err) {
+        console.error('❌ Error fetching user stats:', err);
+      }
+    };
+    fetchStats();
   }, []);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      console.log('📄 Fetching users from admin API...');
-      
-      const token = localStorage.getItem('adminToken');
-      console.log('🎫 Admin token exists:', !!token);
-      
-      const response = await fetch(`${BASE_URL}/api/admin/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers));
-      
-      // Handle non-JSON responses (like HTML error pages)
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.error('❌ Non-JSON response received:', textResponse);
-        throw new Error(`Server returned ${response.status}: Expected JSON but got ${contentType}`);
-      }
-      
-      const data = await response.json();
-      console.log('📦 Response data:', data);
-      
-      if (data.success && data.users) {
-        setUsers(data.users);
-        console.log(`✅ Loaded ${data.users.length} users from database`);
-      } else {
-        console.error('❌ API returned unsuccessful response:', data.message);
-        // Fall back to empty array instead of mock data
-        setUsers([]);
-        alert(`Failed to fetch users: ${data.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching users:', error);
-      alert(`Failed to fetch users: ${error.message}. Check console for details.`);
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
+  const goToPage = (nextPage) => {
+    if (nextPage < 1 || nextPage > pagination.pages || nextPage === page) return;
+    setPage(nextPage);
   };
 
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
-      console.log(`📄 Toggling user ${userId} status from ${currentStatus} to ${!currentStatus}`);
-      
       const token = localStorage.getItem('adminToken');
       const response = await fetch(`${BASE_URL}/api/admin/users/${userId}/toggle-status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ isActive: !currentStatus })
+        body: JSON.stringify({ isActive: !currentStatus }),
       });
 
       const data = await response.json();
-      console.log('📡 Toggle response:', data);
-      
+
       if (data.success) {
-        setUsers(users.map(user => 
-          user._id === userId ? { ...user, isActive: !currentStatus } : user
-        ));
-        alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
-        console.log(`✅ User ${userId} status toggled to ${!currentStatus}`);
+        const newStatus = !currentStatus;
+        setUsers((prev) =>
+          prev.map((user) => (user._id === userId ? { ...user, isActive: newStatus } : user))
+        );
+        if (selectedUser && selectedUser._id === userId) {
+          setSelectedUser((prev) => ({ ...prev, isActive: newStatus }));
+        }
       } else {
-        console.error('❌ Failed to update user status:', data.message);
         alert(`Failed to update user status: ${data.message}`);
       }
     } catch (error) {
@@ -107,7 +208,6 @@ const AdminUsers = () => {
     }
   };
 
-  // Helper function to format date and time
   const formatDateTime = (dateString) => {
     if (!dateString) return 'Never';
     const date = new Date(dateString);
@@ -117,14 +217,12 @@ const AdminUsers = () => {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
   };
 
-  // Helper function to format full address
   const formatFullAddress = (address) => {
     if (!address) return 'N/A';
-    
     const parts = [];
     if (address.street) parts.push(address.street);
     if (address.locality) parts.push(address.locality);
@@ -133,22 +231,8 @@ const AdminUsers = () => {
     if (address.state) parts.push(address.state);
     if (address.zipCode) parts.push(address.zipCode);
     if (address.country && address.country !== 'India') parts.push(address.country);
-    
     return parts.length > 0 ? parts.join(', ') : 'N/A';
   };
-
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && user.isActive) ||
-      (statusFilter === 'inactive' && !user.isActive);
-    
-    return matchesSearch && matchesStatus;
-  });
 
   if (loading) {
     return (
@@ -164,7 +248,7 @@ const AdminUsers = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">{users.length} total users</p>
+          <p className="text-gray-600">{pagination.total} total users</p>
         </div>
         <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
           <Download className="w-4 h-4 mr-2" />
@@ -180,9 +264,7 @@ const AdminUsers = () => {
               <UserCheck className="w-6 h-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => u.isActive).length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{globalStats.active}</p>
               <p className="text-sm text-gray-600">Active Users</p>
             </div>
           </div>
@@ -194,9 +276,7 @@ const AdminUsers = () => {
               <UserX className="w-6 h-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => !u.isActive).length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{globalStats.inactive}</p>
               <p className="text-sm text-gray-600">Inactive Users</p>
             </div>
           </div>
@@ -209,13 +289,15 @@ const AdminUsers = () => {
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => {
-                  const lastWeek = new Date();
-                  lastWeek.setDate(lastWeek.getDate() - 7);
-                  return new Date(u.createdAt) > lastWeek;
-                }).length}
+                {
+                  users.filter((u) => {
+                    const lastWeek = new Date();
+                    lastWeek.setDate(lastWeek.getDate() - 7);
+                    return new Date(u.createdAt) > lastWeek;
+                  }).length
+                }
               </p>
-              <p className="text-sm text-gray-600">New This Week</p>
+              <p className="text-sm text-gray-600">New This Week (on this page)</p>
             </div>
           </div>
         </div>
@@ -229,13 +311,13 @@ const AdminUsers = () => {
             <input
               type="text"
               placeholder="Search by name, email, or phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-400" />
           <select
@@ -250,9 +332,31 @@ const AdminUsers = () => {
         </div>
       </div>
 
+      {/* Error banner */}
+      {fetchError && (
+        <div className="flex items-center justify-between bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span className="text-sm">{fetchError}</span>
+          </div>
+          <button
+            onClick={() => fetchUsers(page)}
+            className="text-sm font-medium underline hover:no-underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {filteredUsers.length === 0 ? (
+      <div className="bg-white rounded-lg shadow overflow-hidden relative">
+        {fetching && (
+          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {users.length === 0 && !fetching ? (
           <div className="text-center py-12">
             <UserX className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Users Found</h3>
@@ -263,28 +367,16 @@ const AdminUsers = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact & Address
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Orders & Spent
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Login
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact & Address</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders & Spent</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+                {users.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -310,19 +402,15 @@ const AdminUsers = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-medium">
-                        {user.totalOrders || 0} orders
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        ₹{user.totalSpent?.toFixed(2) || '0.00'}
-                      </div>
+                      <div className="text-sm text-gray-900 font-medium">{user.totalOrders || 0} orders</div>
+                      <div className="text-sm text-gray-500">₹{user.totalSpent?.toFixed(2) || '0.00'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.isActive 
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}
+                      >
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -346,11 +434,7 @@ const AdminUsers = () => {
                         </button>
                         <button
                           onClick={() => toggleUserStatus(user._id, user.isActive)}
-                          className={`${
-                            user.isActive 
-                              ? 'text-red-600 hover:text-red-900' 
-                              : 'text-green-600 hover:text-green-900'
-                          }`}
+                          className={user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
                           title={user.isActive ? 'Deactivate User' : 'Activate User'}
                         >
                           {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
@@ -366,6 +450,33 @@ const AdminUsers = () => {
             </table>
           </div>
         )}
+
+        {/* Pagination controls */}
+        {pagination.pages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-200 px-6 py-3">
+            <p className="text-sm text-gray-600">
+              Page {pagination.current} of {pagination.pages} &middot; {pagination.total} users
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => goToPage(page - 1)}
+                disabled={page <= 1 || fetching}
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Prev
+              </button>
+              <button
+                onClick={() => goToPage(page + 1)}
+                disabled={page >= pagination.pages || fetching}
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* User Details Modal */}
@@ -375,16 +486,12 @@ const AdminUsers = () => {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
+                <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-600">
                   ✕
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Personal Information */}
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-4">Personal Information</h4>
                   <div className="space-y-3">
@@ -399,17 +506,17 @@ const AdminUsers = () => {
                         <p className="text-sm text-gray-600">Customer</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Mail className="w-4 h-4" />
                       <span>{selectedUser.email || 'N/A'}</span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4" />
                       <span>{selectedUser.phone || 'N/A'}</span>
                     </div>
-                    
+
                     <div className="flex items-start space-x-2 text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <div>
@@ -422,7 +529,7 @@ const AdminUsers = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4" />
                       <span>Joined {selectedUser.createdAt ? formatDateTime(selectedUser.createdAt) : 'N/A'}</span>
@@ -438,52 +545,49 @@ const AdminUsers = () => {
                   </div>
                 </div>
 
-                {/* Account Stats */}
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-4">Account Statistics</h4>
                   <div className="space-y-4">
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Status</span>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          selectedUser.isActive 
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedUser.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}
+                        >
                           {selectedUser.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Total Orders</span>
-                        <span className="font-semibold text-gray-900">{selectedUser.totalOrders || 0}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Total Spent</span>
-                        <span className="font-semibold text-gray-900">₹{selectedUser.totalSpent?.toFixed(2) || '0.00'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Cart Items</span>
-                        <span className="text-sm text-gray-600">
-                          {selectedUser.cart?.length || 0} items
                         </span>
                       </div>
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Wishlist Items</span>
-                        <span className="text-sm text-gray-600">
-                          {selectedUser.wishlist?.length || 0} items
+                        <span className="text-gray-600">Total Orders</span>
+                        <span className="font-semibold text-gray-900">{selectedUser.totalOrders || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Total Spent</span>
+                        <span className="font-semibold text-gray-900">
+                          ₹{selectedUser.totalSpent?.toFixed(2) || '0.00'}
                         </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Cart Items</span>
+                        <span className="text-sm text-gray-600">{selectedUser.cart?.length || 0} items</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Wishlist Items</span>
+                        <span className="text-sm text-gray-600">{selectedUser.wishlist?.length || 0} items</span>
                       </div>
                     </div>
                   </div>
